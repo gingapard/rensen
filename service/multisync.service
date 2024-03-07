@@ -1,0 +1,12 @@
+[Unit]
+Description=Multisync Backup Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/multisync
+Restart=always
+User=root
+RestartSec=60
+
+[Install]
+WantedBy=default.target
