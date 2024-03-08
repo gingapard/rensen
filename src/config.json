@@ -1,0 +1,29 @@
+[
+  {
+    "hostname": "test",
+    "user": "test",
+    "ip": "test",
+    "key_path": "test",
+    "remote_path": "test",
+    "destination_path": "test",
+    "frequency_hrs": 24
+  },
+  {
+    "hostname": "test",
+    "user": "test",
+    "ip": "test",
+    "key_path": "test",
+    "remote_path": "test",
+    "destination_path": "test",
+    "frequency_hrs": 24
+  },
+  {
+    "hostname": "test",
+    "user": "test",
+    "ip": "test",
+    "key_path": "test",
+    "remote_path": "test",
+    "destination_path": "test",
+    "frequency_hrs": 24
+  }
+]
