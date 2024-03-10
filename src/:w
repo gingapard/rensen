@@ -1,5 +1,5 @@
 use std::io::{Read, Write};
-use std::{path::Path, fs::File};
+use std::path::Path;
 use std::net::TcpStream;
 use ssh2::Session;
 
@@ -33,6 +33,7 @@ fn connect_host(identifier: &str, port: &u16) -> Result<Session, ErrorType> {
 }
 
 pub fn backup_host(host: &mut serde::Host) -> Result<(), ErrorType> {
+
     // ext ip or hostname
     let identifier = match &host.identifier {
         serde::HostIdentifier::Ip(ip) => ip,
@@ -43,35 +44,8 @@ pub fn backup_host(host: &mut serde::Host) -> Result<(), ErrorType> {
     let port = host.port.unwrap_or(22);
     let mut sess = connect_host(&identifier, &port)?;
 
-    // read prvate key
-    let mut file = File::open(host.key_path.unwrap_or("/")).map_err(|err| {
-        log_error(ErrorType::KeyLoad,
-            format!("({}) Could not read private key file: {:?}", err, host.identifier).as_str());
-        ErrorType::KeyLoad
-    })?;
+    let private_key_path = host.key_path.unwrap_or(String::from("/"));
 
-    let mut private_key = String::new();
-    file.read_to_string(&mut private_key).map_err(|err| {
-        log_error(ErrorType::KeyLoad,
-            format!("({}) Could not load private key file: {:?}", err, identifier).as_str());
-        ErrorType::KeyLoad
-    })?;
-
-    // auth
-    sess.userauth_pubkey_file(
-        &host.user,
-        None,
-        Path::new("/"),
-        Some(&private_key),
-    ).map_err(|err| {
-        log_error(ErrorType::Auth,
-            format!("({}) Could not authenticate with private key: {:?}", err, identifier).as_str());
-        ErrorType::Auth
-    })?;
-
-    // copy
-    // TODO: Copy remote dir
-    
 
     Ok(())
 }

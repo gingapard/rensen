@@ -15,6 +15,8 @@ pub enum ErrorType {
     Connect,
     Session,
     Handshake,
+    KeyLoad,
+    Auth,
 }
 
 pub fn log_error(error: ErrorType, msg: &str) {
