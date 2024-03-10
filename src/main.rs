@@ -11,7 +11,7 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    if let Err(err) = utils::zip_compress_dir("testdir", "testdir.tar.gz") {
+    if let Err(err) = utils::zip_compress_dir("mydir", "mydir.tar.gz") {
         eprintln!("Error: {}", err);
     }
     else {

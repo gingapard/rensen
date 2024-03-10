@@ -1,15 +1,15 @@
 use std::fs::{self, File};
-use std::io::{self, BufWriter, copy};
+use std::io::{self, BufReader, BufWriter};
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use tar::{Builder, Archive};
+use tar::Builder;
 
 pub fn zip_compress_dir(path: &str, output_file_path: &str) -> io::Result<()> {
-    // temp
+    // temp tar file
     let tar_file_path = "temp.tar";
     let tar_file = File::create(tar_file_path)?;
 
-    // tar zip
+    // Create a tarball
     let mut tar_builder = Builder::new(tar_file);
     add_dir_contents_to_tar(path, &mut tar_builder, path)?;
     tar_builder.finish()?;
@@ -17,15 +17,10 @@ pub fn zip_compress_dir(path: &str, output_file_path: &str) -> io::Result<()> {
     // gzip compress
     let tar_file = File::open(tar_file_path)?;
     let gz_file = File::create(output_file_path)?;
-    let mut gz_encoder = GzEncoder::new(BufWriter::new(gz_file), Compression::default());
-    let mut tar = Archive::new(tar_file);
-    for entry in tar.entries()? {
-        let mut entry = entry?;
-        copy(&mut entry, &mut gz_encoder)?;
-    }
-    gz_encoder.finish()?;
+    let gz_encoder = GzEncoder::new(BufWriter::new(gz_file), Compression::default());
+    io::copy(&mut BufReader::new(tar_file), &mut BufWriter::new(gz_encoder))?;
 
-    // del
+    // Cleanup: remove temp tar file
     fs::remove_file(tar_file_path)?;
 
     Ok(())
