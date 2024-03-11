@@ -6,7 +6,7 @@ use ssh2::Session;
 use crate::conf::serde;
 use crate::logging::{ErrorType, InfoType, log_error, log_info};
 
-fn connect_host(identifier: &str, port: &u16) -> Result<Session, ErrorType> {
+fn connect_ssh(identifier: &str, port: &u16) -> Result<Session, ErrorType> {
     // connect
     let tcp = TcpStream::connect(format!("{}:{}", identifier, port)).map_err(|err| {
         log_error(ErrorType::Connect,
@@ -32,7 +32,7 @@ fn connect_host(identifier: &str, port: &u16) -> Result<Session, ErrorType> {
     Ok(sess)
 }
 
-pub fn backup_host(host: &mut serde::Host) -> Result<(), ErrorType> {
+pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
     // ext ip or hostname
     let identifier = match &host.identifier {
         serde::HostIdentifier::Ip(ip) => ip,
@@ -41,10 +41,11 @@ pub fn backup_host(host: &mut serde::Host) -> Result<(), ErrorType> {
 
     // ext port
     let port = host.port.unwrap_or(22);
-    let mut sess = connect_host(&identifier, &port)?;
+    let mut sess = connect_ssh(&identifier, &port)?;
 
-    // read prvate key
-    let mut file = File::open(host.key_path.unwrap_or("/")).map_err(|err| {
+    // read key
+    let private_key_path = Path::new(host.key_path.as_ref().map_or("/", |s| s.to_str().unwrap_or("/")));
+    let mut file = File::open(&private_key_path).map_err(|err| {
         log_error(ErrorType::KeyLoad,
             format!("({}) Could not read private key file: {:?}", err, host.identifier).as_str());
         ErrorType::KeyLoad
@@ -69,9 +70,14 @@ pub fn backup_host(host: &mut serde::Host) -> Result<(), ErrorType> {
         ErrorType::Auth
     })?;
 
-    // copy
-    // TODO: Copy remote dir
-    
+    // copy files
+    if let Ok(mut ch) = sess.scp_recv(&host.remote_path) {
+        // TODO handle copying of files
+    } else {
+        log_error(ErrorType::Channel,
+            format!("Could not open channel for {}", identifier).as_str());
+        return Err(ErrorType::Channel);
+    }
 
     Ok(())
 }

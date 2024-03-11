@@ -17,6 +17,7 @@ pub enum ErrorType {
     Handshake,
     KeyLoad,
     Auth,
+    Channel,
 }
 
 pub fn log_error(error: ErrorType, msg: &str) {
