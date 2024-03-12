@@ -12,12 +12,14 @@ pub fn log_info(info: InfoType, msg: &str) {
 
 #[derive(Debug)]
 pub enum ErrorType {
+    STD,
     Connect,
     Session,
     Handshake,
     KeyLoad,
     Auth,
     Channel,
+    Copy,
     Dir,
 }
 
