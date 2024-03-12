@@ -18,6 +18,7 @@ pub enum ErrorType {
     KeyLoad,
     Auth,
     Channel,
+    Dir,
 }
 
 pub fn log_error(error: ErrorType, msg: &str) {

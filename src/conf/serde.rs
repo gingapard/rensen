@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_json;
 use std::fs::File;
-use std::path::Path;
+use std::path::{PathBuf, Path};
 use std::io::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,17 +15,10 @@ pub struct Host {
     pub user: String,
     pub identifier: HostIdentifier,
     pub port: Option<u16>,
-    pub key_path: Option<Box<Path>>,
-    pub remote_path: Box<Path>,
-    // pub exclude: Option<Vec<>>,
-    pub destination_path: Option<Box<Path>>,
+    pub key_path: Option<PathBuf>,
+    pub remote_path: PathBuf,
+    pub destination_path: PathBuf,
     pub frequency_hrs: Option<f32>,
-    // pub incremental: Option<bool>,
-    // pub compression_algorithm: Option<CompressionAlgorithm>,
-    // pub encryption_algorithm: Option<EncryptionAlgorithm>,
-    // pub retention_policy: Option<RetentionPolicy>,
-    // pub connection_timeout_secs: Option<u64>,
-
 }
 
 impl Host {
@@ -33,9 +26,9 @@ impl Host {
         user: String,
         identifier: HostIdentifier,
         port: u16,
-        key_path: String,
-        remote_path: String, 
-        destination_path: String,
+        key_path: PathBuf,
+        remote_path: PathBuf,
+        destination_path: PathBuf,
         frequency_hrs: f32) -> Self {
         Self {
             user,
@@ -43,7 +36,7 @@ impl Host {
             port: Some(port),
             key_path: Some(key_path),
             remote_path,
-            destination_path: Some(destination_path),
+            destination_path,
             frequency_hrs: Some(frequency_hrs),
         }
     }

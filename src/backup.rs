@@ -1,5 +1,5 @@
 use std::io::{Read, Write};
-use std::{path::Path, fs::File};
+use std::{path::Path, fs};
 use std::net::TcpStream;
 use ssh2::Session;
 
@@ -32,6 +32,23 @@ fn connect_ssh(identifier: &str, port: &u16) -> Result<Session, ErrorType> {
     Ok(sess)
 }
 
+fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_path: &Path) -> Result<(), ErrorType> {
+    if let (mut channel) = sess.scp_recv(remote_path) {
+        
+        // create destination directory. if not specified, "~/backups" will be created
+        if !destination_path.exists() {
+            fs::create_dir_all(destination_path).map_err(|err| {
+                log_error(ErrorType::Dir,
+                    format!("Error creating directory: {:?}", err).as_str());
+                ErrorType::Dir
+            })?;
+        }
+        // TODO
+    }
+
+    Ok(())
+}
+
 pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
     // ext ip or hostname
     let identifier = match &host.identifier {
@@ -45,7 +62,7 @@ pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
 
     // read key
     let private_key_path = Path::new(host.key_path.as_ref().map_or("/", |s| s.to_str().unwrap_or("/")));
-    let mut file = File::open(&private_key_path).map_err(|err| {
+    let mut file = fs::File::open(&private_key_path).map_err(|err| {
         log_error(ErrorType::KeyLoad,
             format!("({}) Could not read private key file: {:?}", err, host.identifier).as_str());
         ErrorType::KeyLoad
@@ -70,15 +87,8 @@ pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
         ErrorType::Auth
     })?;
 
-    // copy files
-    if let Ok(mut ch) = sess.scp_recv(&host.remote_path) {
-        // TODO handle copying of files
-    } else {
-        log_error(ErrorType::Channel,
-            format!("Could not open channel for {}", identifier).as_str());
-        return Err(ErrorType::Channel);
-    }
-
+    copy_remote_directory(&mut sess, &host.remote_path, &host.destination_path)?;
+    
     Ok(())
 }
 
