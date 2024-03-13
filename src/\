@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::io::{self, Write, Read, Error as IOError};
+use std::io::{self, Read, Error as IOError};
 use std::net::TcpStream;
 use ssh2::{Session, Error as SSHError};
 use std::path::{Path, PathBuf};
@@ -33,73 +33,29 @@ fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_pat
     // Create destination directory if it doesn't exist
     if !destination_path.exists() {
         fs::create_dir_all(destination_path).map_err(|err| {
-            log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
-            ErrorType::FS
+            log_error(ErrorType::STD, format!("Error creating directory: {}", err).as_str());
+            ErrorType::STD
         })?;
     }
-    
-    let dir_entries = sess.sftp().map_err(|err| {
-        log_error(ErrorType::Copy, format!("Could not init sftp: {}", err).as_str());
-        ErrorType::Copy
-    })?
-    .readdir(remote_path).map_err(|err| {
-        log_error(ErrorType::Copy, format!("Could not read remote directory: {}", err).as_str());
+
+    let mut channel = sess.scp_recv(remote_path).map_err(|err| {
+        log_error(ErrorType::Copy, format!("Could not receive files from remote directory: {}", err).as_str());
         ErrorType::Copy
     })?;
 
-    for (entry, _) in dir_entries {
-        let filename = match entry.file_name() {
-            Some(filename) => filename,
-            None => {
-                log_error(ErrorType::Copy, "empty file");
-                continue;
-            },
-        };
-
-        // format paths
-        let remote_file_path = remote_path.join(filename);
-        let destination_file_path = destination_path.join(&filename);
-
-        if entry.is_file() {
-            copy_remote_file(sess, &remote_file_path, &destination_file_path)?;
-        }
-        else if entry.is_dir() {
-            copy_remote_directory(sess, &remote_file_path, &destination_file_path)?;
+    let mut buffer: Vec<u8> = Vec::new();
+    loop {
+        match channel
+            _=> (),
         }
     }
-   
+
     Ok(())
 }
 
 // use in recursing directory
 fn copy_remote_file(sess: &mut Session, remote_path: &Path, destination_path: &Path) -> Result<(), ErrorType> {
-    let (mut channel, _) = sess.scp_recv(remote_path).map_err(|err| {
-        log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
-        ErrorType::Copy
-    })?;
 
-    let mut file = fs::File::create(destination_path).map_err(|err| {
-        log_error(ErrorType::FS, format!("Could not create file: {}", err).as_str());
-        ErrorType::FS
-    })?;
-
-    let mut buffer = [0; 4096];
-    loop {
-        match channel.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(n) => {
-                file.write_all(&buffer[..n]).map_err(|err| {
-                    log_error(ErrorType::FS, format!("Could not write to file: {}", err).as_str());
-                    ErrorType::FS
-                })?;
-            }
-            // skip 
-            Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
-            Err(err) => {
-                log_error(ErrorType::Copy, format!("Could not read from channel: {}", err).as_str());
-            }
-        }
-    }
 
     Ok(())
 }
@@ -121,8 +77,7 @@ pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
     File::open(private_key_path).map_err(|err| {
         log_error(ErrorType::KeyLoad, format!("Could not read private key file: {}", err).as_str());
         ErrorType::KeyLoad
-    })?
-    .read_to_string(&mut private_key).map_err(|err| {
+    })?.read_to_string(&mut private_key).map_err(|err| {
         log_error(ErrorType::KeyLoad, format!("Could not load private key file: {}", err).as_str());
         ErrorType::KeyLoad
     })?;
@@ -133,7 +88,6 @@ pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
         ErrorType::Auth
     })?;
 
-    // Copy remote path and all of it's content
     copy_remote_directory(&mut sess, &host.remote_path, &host.destination_path)?;
     
     Ok(())

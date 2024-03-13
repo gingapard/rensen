@@ -6,10 +6,6 @@ pub enum InfoType {
     Success(),
 }
 
-pub fn log_info(info: InfoType, msg: &str) {
-    log_info!("{:?}: {}", std::mem::discriminant(&info), msg);
-}
-
 #[derive(Debug)]
 pub enum ErrorType {
     STD,
@@ -19,10 +15,13 @@ pub enum ErrorType {
     KeyLoad,
     Auth,
     Channel,
+    FS,
     Copy,
-    Dir,
 }
 
+pub fn log_info(info: InfoType, msg: &str) {
+    log_info!("{:?}: {}", std::mem::discriminant(&info), msg);
+}
 pub fn log_error(error: ErrorType, msg: &str) {
     error!("{:?}: {}", std::mem::discriminant(&error), msg);
 }
