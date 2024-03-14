@@ -3,7 +3,7 @@ use std::io::{self, Write, Read, Error as IOError};
 use std::net::TcpStream;
 use ssh2::{Session, Error as SSHError};
 use std::path::{Path, PathBuf};
-use crate::logging::{log_error, ErrorType};
+use crate::logging::{log_error, ErrorType, log_info, InfoType};
 use crate::serde;
 
 fn connect_ssh(identifier: &str, port: u16) -> Result<Session, ErrorType> {
@@ -36,6 +36,7 @@ fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_pat
             log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
             ErrorType::FS
         })?;
+        println!("...destdir created");
     }
     
     let dir_entries = sess.sftp().map_err(|err| {
@@ -46,10 +47,14 @@ fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_pat
         log_error(ErrorType::Copy, format!("Could not read remote directory: {}", err).as_str());
         ErrorType::Copy
     })?;
+    println!("{:?}", dir_entries);
 
     for (entry, _) in dir_entries {
         let filename = match entry.file_name() {
-            Some(filename) => filename,
+            Some(filename) => {
+                println!("{:?}", filename);
+                filename
+            },
             None => {
                 log_error(ErrorType::Copy, "empty file");
                 continue;
@@ -107,7 +112,7 @@ fn copy_remote_file(sess: &mut Session, remote_path: &Path, destination_path: &P
 /// Remote sync backup using ssh/sftp
 /// Default port: 22
 /// Default keypaht: "$HOME/.ssh/id_rsa"
-pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
+pub fn backup_rsync(host: &serde::Host) -> Result<(), ErrorType> {
     // ext ip or hostname
     let identifier = match &host.identifier {
         serde::HostIdentifier::Ip(ip) => ip,
@@ -131,8 +136,8 @@ pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
 
     // Copy remote path and all of it's content
     copy_remote_directory(&mut sess, &host.remote_path, &host.destination_path)?;
+    println!("...copied files");
     
     Ok(())
 }
-
 
