@@ -39,7 +39,7 @@ fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_pat
     }
     
     let dir_entries = sess.sftp().map_err(|err| {
-        log_error(ErrorType::Copy, format!("Could not init sftp: {}", err).as_str());
+        log_error(ErrorType::Copy, format!("Could not init SFTP: {}", err).as_str());
         ErrorType::Copy
     })?
     .readdir(remote_path).map_err(|err| {
@@ -71,7 +71,7 @@ fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_pat
     Ok(())
 }
 
-// use in recursing directory
+// Use in recursing directory
 fn copy_remote_file(sess: &mut Session, remote_path: &Path, destination_path: &Path) -> Result<(), ErrorType> {
     let (mut channel, _) = sess.scp_recv(remote_path).map_err(|err| {
         log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
@@ -104,6 +104,9 @@ fn copy_remote_file(sess: &mut Session, remote_path: &Path, destination_path: &P
     Ok(())
 }
 
+/// Remote sync backup using ssh/sftp
+/// Default port: 22
+/// Default keypaht: "$HOME/.ssh/id_rsa"
 pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
     // ext ip or hostname
     let identifier = match &host.identifier {
@@ -115,21 +118,14 @@ pub fn backup_rsync(host: &mut serde::Host) -> Result<(), ErrorType> {
     let port = host.port.unwrap_or(22);
     let mut sess = connect_ssh(&identifier, port)?;
 
-    // read key
-    let private_key_path = host.key_path.as_ref().map_or("/", |s| s.to_str().unwrap_or("/"));
-    let mut private_key = String::new();
-    File::open(private_key_path).map_err(|err| {
-        log_error(ErrorType::KeyLoad, format!("Could not read private key file: {}", err).as_str());
-        ErrorType::KeyLoad
-    })?
-    .read_to_string(&mut private_key).map_err(|err| {
-        log_error(ErrorType::KeyLoad, format!("Could not load private key file: {}", err).as_str());
-        ErrorType::KeyLoad
-    })?;
+    // key path
+    let private_key_path = Path::new(host.key_path.as_ref()
+        .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("$HOME/.ssh/id_rsa"))
+    );
 
-    // Authenticate with public key
-    sess.userauth_pubkey_file(&host.user, None, Path::new("/"), Some(&private_key)).map_err(|err| {
-        log_error(ErrorType::Auth, format!("Could not authenticate with private key: {}", err).as_str());
+    // Authenticate session (private key --> public key)
+    sess.userauth_pubkey_file(&host.user, None, private_key_path, None).map_err(|err| {
+        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
         ErrorType::Auth
     })?;
 
