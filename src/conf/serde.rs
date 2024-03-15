@@ -66,4 +66,9 @@ impl Config {
         let hosts: Vec<Host> = serde_json::from_str(&contents)?;
         Ok(Self {hosts})
     }
+    
+    pub fn verify_syntax_json(file_path: &str) -> std::io::Result<()> {
+
+        Ok(())
+    }
 }

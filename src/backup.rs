@@ -47,28 +47,33 @@ fn copy_remote_directory(sess: &mut Session, remote_path: &Path, destination_pat
         log_error(ErrorType::Copy, format!("Could not read remote directory: {}", err).as_str());
         ErrorType::Copy
     })?;
-    println!("{:?}", dir_entries);
 
-    for (entry, _) in dir_entries {
-        let filename = match entry.file_name() {
-            Some(filename) => {
-                println!("{:?}", filename);
-                filename
+    for (entry, stat) in dir_entries {
+        let entryname = match entry.file_name() {
+            Some(entryname) => {
+                entryname 
             },
             None => {
-                log_error(ErrorType::Copy, "empty file");
+                log_error(ErrorType::Copy, "Empty file");
                 continue;
             },
         };
 
         // format paths
-        let remote_file_path = remote_path.join(filename);
-        let destination_file_path = destination_path.join(&filename);
+        let remote_file_path = remote_path.join(entryname);
+        let destination_file_path = destination_path.join(&entryname);
+        println!("{:?} ---------> {:?}", remote_file_path, destination_file_path);
 
-        if entry.is_file() {
+        if stat.is_file() {
             copy_remote_file(sess, &remote_file_path, &destination_file_path)?;
         }
-        else if entry.is_dir() {
+        else if stat.is_dir() {
+            let dest_subdir_path = destination_path.join(&entryname);
+            fs::create_dir_all(&dest_subdir_path).map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
+                ErrorType::FS
+            })?;
+
             copy_remote_directory(sess, &remote_file_path, &destination_file_path)?;
         }
     }
@@ -102,6 +107,7 @@ fn copy_remote_file(sess: &mut Session, remote_path: &Path, destination_path: &P
             Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
             Err(err) => {
                 log_error(ErrorType::Copy, format!("Could not read from channel: {}", err).as_str());
+                return Err(ErrorType::Copy);
             }
         }
     }
@@ -111,7 +117,7 @@ fn copy_remote_file(sess: &mut Session, remote_path: &Path, destination_path: &P
 
 /// Remote sync backup using ssh/sftp
 /// Default port: 22
-/// Default keypaht: "$HOME/.ssh/id_rsa"
+/// Default keypath: "$HOME/.ssh/id_rsa"
 pub fn backup_rsync(host: &serde::Host) -> Result<(), ErrorType> {
     // ext ip or hostname
     let identifier = match &host.identifier {

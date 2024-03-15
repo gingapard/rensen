@@ -13,10 +13,9 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let des_hosts= serde::Config::deserialize_json("hosts.conf").unwrap();
+    let des_hosts= serde::Config::deserialize_json("hosts").unwrap();
 
     let host = &des_hosts.hosts[0];
-    println!("deserialized");
     backup::backup_rsync(&host).unwrap();
 
     Ok(())
