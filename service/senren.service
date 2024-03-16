@@ -1,9 +1,9 @@
 [Unit]
-Description=Multisync Backup Service
+Description=Senren Backup Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/multisync
+ExecStart=/usr/local/bin/senren
 Restart=always
 User=root
 RestartSec=60

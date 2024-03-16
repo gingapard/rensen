@@ -1,11 +1,10 @@
-pub mod conf;
 pub mod logging;
 pub mod utils;
 pub mod backup;
-use conf::serde;
-use std::fs::File;
-use std::path::Path;
-use std::path::PathBuf;
+pub mod config;
+
+use config::*;
+use logging::ErrorType;
 
 use std::{env, net, io::Result, error};
 use env_logger;
@@ -13,10 +12,10 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let des_hosts= serde::Config::deserialize_json("hosts").unwrap();
+    let des_hosts = Settings::deserialize_json("hosts")?;
 
     let host = &des_hosts.hosts[0];
-    backup::backup_rsync(&host).unwrap();
+    backup::rsync::backup(&host).unwrap();
 
     Ok(())
 }
