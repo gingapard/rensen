@@ -1,8 +1,8 @@
 use serde::{Serialize, Deserialize};
 use serde_json;
 use std::fs::File;
-use std::path::{PathBuf, Path};
-use std::io::prelude::*;
+use std::path::PathBuf;
+use std::io::{prelude::*, Result};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum HostIdentifier {
@@ -51,14 +51,14 @@ impl Settings {
         Self {hosts}
     }
 
-    pub fn serialize_json(&self, file_path: &str) -> std::io::Result<()> {
+    pub fn serialize_json(&self, file_path: &str) -> Result<()> {
         let mut file = File::create(file_path)?;
         let json_str = serde_json::to_string_pretty(&self.hosts)?;
         write!(file, "{}", json_str)?;
         Ok(())
     }
 
-    pub fn deserialize_json(file_path: &str) -> std::io::Result<Self> {
+    pub fn deserialize_json(file_path: &str) -> Result<Self> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -66,7 +66,7 @@ impl Settings {
         Ok(Self {hosts})
     }
     
-    pub fn verify_syntax_json(file_path: &str) -> std::io::Result<()> {
+    pub fn verify_syntax_json(file_path: &str) -> Result<()> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

@@ -3,6 +3,8 @@ pub mod utils;
 pub mod backup;
 pub mod config;
 
+use backup::rsync;
+
 use config::*;
 use logging::ErrorType;
 
@@ -14,8 +16,8 @@ fn main() -> Result<()> {
 
     let des_hosts = Settings::deserialize_json("hosts")?;
 
-    let host = &des_hosts.hosts[0];
-    backup::rsync::backup(&host).unwrap();
+    let host_config = &des_hosts.hosts[0];
+    let host = rsync::Host::new(host_config, None);
 
     Ok(())
 }
