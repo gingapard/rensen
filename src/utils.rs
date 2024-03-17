@@ -1,8 +1,14 @@
 use std::fs::{self, File};
 use std::io::{self, BufReader, BufWriter};
+use std::path::Path;
+use std::io::prelude::*;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use tar::Builder;
+use sha3::{Digest, Sha3_256};
+
+use crate::logging;
+use logging::{log_error, ErrorType};
 
 pub fn zip_compress_dir(path: &str, output_file_path: &str) -> io::Result<()> {
     // temp tar file
@@ -45,4 +51,27 @@ fn add_dir_contents_to_tar(
     }
     Ok(())
 }
+
+pub fn hash_file(file_path: &Path) -> Result<String, ErrorType> {
+    let mut file = match File::open(file_path) {
+        Ok(file) => file,
+        Err(err) => {
+            log_error(ErrorType::FS, format!("Could not open {:?}: {}", file_path, err).as_str());
+            return Err(ErrorType::FS);
+        }
+    };
+
+
+    let mut buffer = [0; 1024];
+    match file.read_exact(&mut buffer) {
+        Ok(_) => (),
+        Err(err) => {
+            log_error(ErrorType::FS, format!("Could not read to buffer: {}", err).as_str());
+            return Err(ErrorType::FS);
+        }
+    }
+
+    Ok("".to_string())
+}
+
 

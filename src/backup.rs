@@ -17,7 +17,7 @@ pub mod rsync {
 
     pub struct Rsync<'a> {
         host_config: &'a HostConfig,
-        // cache: Cache
+        // cache: HostCache
         sess: Option<Session>
     }
 
@@ -63,7 +63,6 @@ pub mod rsync {
         }
 
         fn connect(&mut self) -> Result<(), ErrorType> {
-
             let identifier = match &self.host_config.identifier {
                 HostIdentifier::Ip(ip) => ip,
                 HostIdentifier::Hostname(hostname) => hostname,
