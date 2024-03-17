@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     let des_hosts = Settings::deserialize_json("hosts")?;
 
     let host_config = &des_hosts.hosts[0];
-    let host = rsync::Host::new(host_config, None);
+    let host = rsync::Rsync::new(host_config, None);
 
     Ok(())
 }

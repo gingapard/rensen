@@ -7,7 +7,7 @@ pub mod rsync {
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
 
-    pub trait Backupper {
+    pub trait BackupMethod {
         fn full_backup(&mut self) -> Result<(), ErrorType>;
         fn incremental_backup(&mut self) -> Result<(), ErrorType>;
         fn connect(&mut self) -> Result<(), ErrorType>;
@@ -15,19 +15,19 @@ pub mod rsync {
         fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
     }
 
-    pub struct Host<'a> {
+    pub struct Rsync<'a> {
         host_config: &'a HostConfig,
         // cache: Cache
         sess: Option<Session>
     }
 
-    impl<'a> Host<'a> {
+    impl<'a> Rsync<'a> {
         pub fn new(host_config: &'a HostConfig, sess: Option<Session>) -> Self {
             Self {host_config, sess}
         }
     }
 
-    impl Backupper for Host<'_> {
+    impl BackupMethod for Rsync<'_> {
 
         /// Remote sync backup using ssh/sftp
         /// Default port: 22
@@ -55,7 +55,10 @@ pub mod rsync {
         }
 
         fn incremental_backup(&mut self) -> Result<(), ErrorType> {
-            // TODO: implement incremental backup
+            // TODO: implement incremental backup.
+            // * hash first 1024 bytes of file
+            // * if eq, continuously hash next 1024 bytes until they are not eq.
+            // * if file is eq, skip copy.
             Ok(())
         }
 
@@ -126,7 +129,6 @@ pub mod rsync {
                 // format paths
                 let remote_file_path = remote_path.join(entryname);
                 let dest_file_path = dest_path.join(&entryname);
-                println!("{:?} ---------> {:?}", remote_file_path, dest_file_path);
 
                 if stat.is_file() {
                     self.copy_remote_file(&remote_file_path, &dest_file_path)?;
@@ -145,7 +147,7 @@ pub mod rsync {
             Ok(())
         }
 
-        /// Copy remote file to destination.
+        /// Copy remote file (remote_path) to destination (dest_path).
         fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_path).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
@@ -167,7 +169,6 @@ pub mod rsync {
                             ErrorType::FS
                         })?;
                     }
-                    // skip 
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(err) => {
                         log_error(ErrorType::Copy, format!("Could not read from channel: {}", err).as_str());
