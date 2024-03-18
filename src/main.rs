@@ -1,5 +1,6 @@
 pub mod logging;
 pub mod utils;
+pub use utils::hash_file;
 pub mod backup;
 pub mod config;
 
