@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_json;
+use serde_yaml;
 use std::fs::File;
 use std::path::PathBuf;
 use std::io::{prelude::*, self, Write, Read};
@@ -24,6 +25,9 @@ pub struct HostConfig {
 }
 
 impl HostConfig {
+    /// Constructor method for HostConfig not actually
+    /// a part of the program, but just for generating 
+    /// the config file in unit tests.
     pub fn new(
         user: String,
         identifier: HostIdentifier,
@@ -53,6 +57,7 @@ impl Settings {
         Self {hosts}
     }
 
+    // json
     pub fn serialize_json(&self, file_path: &str) -> std::io::Result<()> {
         let mut file = File::create(file_path)?;
         let json_str = serde_json::to_string_pretty(&self.hosts)?;
@@ -67,7 +72,7 @@ impl Settings {
         let hosts: Vec<HostConfig> = serde_json::from_str(&contents)?;
         Ok(Self {hosts})
     }
-    
+
     pub fn verify_syntax_json(file_path: &str) -> std::io::Result<()> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
@@ -81,4 +86,29 @@ impl Settings {
 
         Ok(())
     }
+
+    // yaml
+    pub fn serialize_yaml(&self, file_path: &str) -> std::io::Result<()> {
+        let mut file = File::create(file_path)?;
+        let yaml_str = serde_yaml::to_string(&self.hosts)
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+
+        let formatted_yaml = serde_yaml::to_string(&serde_yaml::from_str::<serde_yaml::Value>(&yaml_str)
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))? 
+        ).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+
+        file.write_all(formatted_yaml.as_bytes())?;
+        Ok(())
+    }
+
+    pub fn deserialize_yaml(file_path: &str) -> std::io::Result<Self> {
+        let mut file = File::open(file_path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let hosts: Vec<HostConfig> = serde_yaml::from_str(&contents)
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+        Ok(Self { hosts })
+    }
+
+    
 }
