@@ -3,6 +3,7 @@ pub mod utils;
 pub use utils::hash_file;
 pub mod backup;
 pub mod config;
+pub mod tests;
 
 use backup::rsync;
 

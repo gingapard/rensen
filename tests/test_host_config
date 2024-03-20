@@ -1,0 +1,13 @@
+[
+  {
+    "user": "user",
+    "identifier": {
+      "Ip": "192.168.1.0/24"
+    },
+    "port": 22,
+    "key_path": "~/.ssh/testkey",
+    "remote_path": "remote/path",
+    "dest_path": "dest/path",
+    "frequency_hrs": 24.0
+  }
+]
