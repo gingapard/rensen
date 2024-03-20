@@ -15,6 +15,7 @@ pub enum ErrorType {
     Auth,
     Channel,
     FS,
+    Config,
     Copy,
 }
 
