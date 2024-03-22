@@ -31,21 +31,27 @@ pub mod rsync {
 
         /// Remote sync backup using ssh/sftp
         /// Default port: 22
-        /// Default keypath: "$HOME/.ssh/id_rsa"
+        /// Default keypath: "/home/$HOME/.ssh/id_rsa"
         fn full_backup(&mut self) -> Result<(), ErrorType> {
 
             self.connect()?;
 
             // key path
             let private_key_path = Path::new(self.host_config.key_path.as_ref()
-                .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("$HOME/.ssh/id_rsa"))
+                .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("/home/$HOME/.ssh/id_rsa"))
             );
 
             // Authenticate session (private key --> public key)
-            self.sess.as_ref().unwrap().userauth_pubkey_file(&self.host_config.user, None, private_key_path, None).map_err(|err| {
-                log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
-                ErrorType::Auth
-            })?;
+            self.sess = match self.sess {
+                Some(_) => (),
+                None => {
+                    self.sess.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None).map_err(|err| {
+                        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
+                        ErrorType::Auth
+                    })?;
+                }
+            };
+
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;

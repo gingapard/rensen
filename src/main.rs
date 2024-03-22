@@ -5,7 +5,7 @@ pub mod backup;
 pub mod config;
 pub mod tests;
 
-use backup::rsync;
+use backup::{rsync, rsync::BackupMethod};
 
 use config::*;
 use logging::ErrorType;
@@ -16,10 +16,11 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let des_hosts = Settings::deserialize_json("hosts")?;
+    let des_hosts = Settings::deserialize_yaml("test.yaml")?;
 
     let host_config = &des_hosts.hosts[0];
-    let host = rsync::Rsync::new(host_config, None);
+    let mut host = rsync::Rsync::new(host_config, None);
+    host.full_backup();
 
     Ok(())
 }
