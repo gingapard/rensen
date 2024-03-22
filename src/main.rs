@@ -19,8 +19,7 @@ fn main() -> Result<()> {
     let des_hosts = Settings::deserialize_yaml("test.yaml")?;
 
     let host_config = &des_hosts.hosts[0];
-    let mut host = rsync::Rsync::new(host_config, None);
-    host.full_backup();
+    let mut host = rsync::Rsync::new(host_config);
 
     Ok(())
 }

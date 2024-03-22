@@ -22,8 +22,8 @@ pub mod rsync {
     }
 
     impl<'a> Rsync<'a> {
-        pub fn new(host_config: &'a HostConfig, sess: Option<Session>) -> Self {
-            Self {host_config, sess}
+        pub fn new(host_config: &'a HostConfig) -> Self {
+            Self {host_config, sess: None}
         }
     }
 
@@ -42,16 +42,23 @@ pub mod rsync {
             );
 
             // Authenticate session (private key --> public key)
-            self.sess = match self.sess {
-                Some(_) => (),
-                None => {
-                    self.sess.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None).map_err(|err| {
+            if self.sess.is_none() {
+                let sess = match ssh2::Session::new() {
+                    Ok(v) => v,
+                    Err(err) => {
+                        log_error(ErrorType::Auth, format!("Could not construct session: {}", err).as_str());
+                        return Err(ErrorType::Auth);
+                    }
+                };
+
+                sess.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None)
+                    .map_err(|err| {
                         log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
                         ErrorType::Auth
                     })?;
-                }
-            };
-
+                
+                self.sess = Some(sess);
+            }
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
