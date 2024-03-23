@@ -16,9 +16,9 @@ pub mod rsync {
     }
 
     pub struct Rsync<'a> {
-        host_config: &'a HostConfig,
-        // cache: HostCache
-        sess: Option<Session>
+        pub host_config: &'a HostConfig,
+        // pub cache: HostCache
+        pub sess: Option<Session>
     }
 
     impl<'a> Rsync<'a> {
@@ -40,25 +40,24 @@ pub mod rsync {
             let private_key_path = Path::new(self.host_config.key_path.as_ref()
                 .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("/home/$HOME/.ssh/id_rsa"))
             );
+        
+            println!("key_path: {:?}", private_key_path);
 
             // Authenticate session (private key --> public key)
-            if self.sess.is_none() {
-                let sess = match ssh2::Session::new() {
-                    Ok(v) => v,
-                    Err(err) => {
-                        log_error(ErrorType::Auth, format!("Could not construct session: {}", err).as_str());
+            match self.sess.as_ref() {
+                Some(session) => {
+                    if let Err(err) = session.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None) {
+                        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
                         return Err(ErrorType::Auth);
                     }
-                };
-
-                sess.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None)
-                    .map_err(|err| {
-                        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
-                        ErrorType::Auth
-                    })?;
-                
-                self.sess = Some(sess);
+                },
+                None => {
+                    log_error(ErrorType::Auth, "Session is None");
+                    return Err(ErrorType::Auth);
+                }
             }
+
+            println!("...auth");
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
@@ -103,6 +102,7 @@ pub mod rsync {
                 ErrorType::Handshake
             })?;
 
+            self.sess = Some(sess);
             Ok(())
         }
         

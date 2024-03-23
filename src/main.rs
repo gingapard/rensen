@@ -20,6 +20,7 @@ fn main() -> Result<()> {
 
     let host_config = &des_hosts.hosts[0];
     let mut host = rsync::Rsync::new(host_config);
+    let _ = host.full_backup();
 
     Ok(())
 }

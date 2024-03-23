@@ -1,9 +1,9 @@
 ---
-- user: mc
+- user: cbroo
   identifier:
-    Ip: 192.168.1.76
+    Ip: 192.168.1.223
   port: 22
-  key_path: /home/bam/.ssh/id_rsa
-  remote_path: /home/mc/mc-server
-  dest_path: /home/bam/backups
+  key_path: /home/cbroo/.ssh/id_ed25519
+  remote_path: /home/cbroo/testdir
+  dest_path: /home/cbroo/backups
   frequency_hrs: 24.0
