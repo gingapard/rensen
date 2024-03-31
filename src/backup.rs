@@ -16,13 +16,13 @@ pub mod rsync {
     }
 
     pub struct Rsync<'a> {
-        pub host_config: &'a HostConfig,
+        pub host_config: &'a mut HostConfig,
         // pub cache: HostCache
         pub sess: Option<Session>
     }
 
     impl<'a> Rsync<'a> {
-        pub fn new(host_config: &'a HostConfig) -> Self {
+        pub fn new(host_config: &'a mut HostConfig) -> Self {
             Self {host_config, sess: None}
         }
     }
@@ -58,6 +58,9 @@ pub mod rsync {
             }
 
             println!("...auth");
+
+            // format dest path
+            self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;

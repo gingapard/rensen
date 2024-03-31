@@ -2,8 +2,9 @@ use serde::{Serialize, Deserialize};
 use serde_json;
 use serde_yaml;
 use std::fs::File;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::io::{prelude::*, self, Write, Read};
+
 use crate::logging;
 use logging::{log_error, ErrorType};
 
@@ -11,6 +12,15 @@ use logging::{log_error, ErrorType};
 pub enum HostIdentifier {
     Ip(String),
     Hostname(String),
+}
+
+impl AsRef<Path> for HostIdentifier {
+    fn as_ref(&self) -> &Path {
+        match self {
+            HostIdentifier::Ip(s) => Path::new(s.as_str()),
+            HostIdentifier::Hostname(s) => Path::new(s.as_str()),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]

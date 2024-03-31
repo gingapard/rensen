@@ -16,10 +16,10 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let des_hosts = Settings::deserialize_yaml("test.yaml")?;
+    let mut des_hosts = Settings::deserialize_yaml("test.yaml")?;
 
-    let host_config = &des_hosts.hosts[0];
-    let mut host = rsync::Rsync::new(host_config);
+    let mut host_config = &mut des_hosts.hosts[0];
+    let mut host = rsync::Rsync::new(&mut host_config);
     let _ = host.full_backup();
 
     Ok(())
