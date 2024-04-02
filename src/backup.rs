@@ -2,7 +2,8 @@ pub mod rsync {
     use std::fs;
     use std::io::{self, Write, Read};
     use std::net::TcpStream;
-    use ssh2::Session;
+    use ssh2::{Session, FileStat};
+    use std::time::SystemTime;
     use std::path::Path;
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
@@ -26,27 +27,32 @@ pub mod rsync {
             Self {host_config, sess: None}
         }
 
-        pub fn compare_files(&self, local_file: &Path, remote_file: &Path) -> Result<bool, ErrorType> {
-            let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_file).map_err(|err| {
-                log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
-                ErrorType::Copy
-            })?;
-
-            let mut file = fs::File::create("local_file.temp").map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not create file: {}", err).as_str());
+        /// Compares one local file and one remote files last modified timestamp (metadata).
+        pub fn compare_files_lm(&self, local_file: &Path, remote_file: &Path) -> Result<bool, ErrorType> {
+            // todo: compact code
+            let local_metadata = fs::metadata(local_file).map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not get metadata of local file: {}", err).as_str());
                 ErrorType::FS
             })?;
 
-            let mut buffer = [0; 3072];
-            match channel.read(&mut buffer) {
-                Ok(0) => return Err(ErrorType::Copy),
-                _ => ()
-            };
+            let sftp = self.sess.as_ref().unwrap().sftp().map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not init SFTP session: {}", err).as_str());
+                ErrorType::FS
+            })?;
 
-            let metadata = fs::metadata("local_file.temp");
-            // TODO:
+            let remote_metadata = sftp.stat(remote_file).map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not get metadata of remote file: {}", err).as_str());
+                ErrorType::FS
+            })?;
 
-            Ok(false)
+            let local_modified = local_metadata.modified().map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not get mod time of local file: {}", err).as_str());
+                ErrorType::FS
+            })?;
+
+            let remote_modified = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(remote_metadata.mtime.unwrap_or(0));
+
+            Ok(local_modified > remote_modified)
         }
     }
 
@@ -92,11 +98,10 @@ pub mod rsync {
             Ok(())
         }
 
+        /// Compare last-modified timestamp of files with matching namesm,
+        /// ignoring those with mathching timestamp. 
         fn incremental_backup(&mut self) -> Result<(), ErrorType> {
-            // TODO: implement incremental backup.
-            // * hash first 1024 bytes of file
-            // * if eq, continuously hash next 1024 bytes until they are not eq.
-            // * if file is eq, skip copy.
+        
             Ok(())
         }
 
