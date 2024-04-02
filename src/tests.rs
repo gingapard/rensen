@@ -50,3 +50,4 @@ pub fn test_deserialize_yaml() {
     let path = "tests/test.yaml";
     let settings = Settings::deserialize_yaml(path).unwrap();
 }
+

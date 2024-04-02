@@ -25,6 +25,29 @@ pub mod rsync {
         pub fn new(host_config: &'a mut HostConfig) -> Self {
             Self {host_config, sess: None}
         }
+
+        pub fn compare_files(&self, local_file: &Path, remote_file: &Path) -> Result<bool, ErrorType> {
+            let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_file).map_err(|err| {
+                log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
+                ErrorType::Copy
+            })?;
+
+            let mut file = fs::File::create("local_file.temp").map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not create file: {}", err).as_str());
+                ErrorType::FS
+            })?;
+
+            let mut buffer = [0; 3072];
+            match channel.read(&mut buffer) {
+                Ok(0) => return Err(ErrorType::Copy),
+                _ => ()
+            };
+
+            let metadata = fs::metadata("local_file.temp");
+            // TODO:
+
+            Ok(false)
+        }
     }
 
     impl BackupMethod for Rsync<'_> {
@@ -57,14 +80,14 @@ pub mod rsync {
                 }
             }
 
-            println!("...auth");
+            println!("... auth");
 
             // format dest path
             self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
-            println!("...copied files");
+            println!("... copied files");
             
             Ok(())
         }
