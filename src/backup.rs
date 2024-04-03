@@ -5,20 +5,13 @@ pub mod rsync {
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
     use std::path::Path;
+    use crate::traits::BackupMethod;
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
 
-    pub trait BackupMethod {
-        fn full_backup(&mut self) -> Result<(), ErrorType>;
-        fn incremental_backup(&mut self) -> Result<(), ErrorType>;
-        fn connect(&mut self) -> Result<(), ErrorType>;
-        fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
-        fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
-    }
-
     pub struct Rsync<'a> {
         pub host_config: &'a mut HostConfig,
-        // pub cache: HostCache
+        // pub record: Record
         pub sess: Option<Session>
     }
 
@@ -28,7 +21,7 @@ pub mod rsync {
         }
 
         /// Compares one local file and one remote files last modified timestamp (metadata).
-        pub fn compare_files_lm(&self, local_file: &Path, remote_file: &Path) -> Result<bool, ErrorType> {
+        pub fn compare_files_modified(&self, local_file: &Path, remote_file: &Path) -> Result<bool, ErrorType> {
             // todo: compact code
             let local_metadata = fs::metadata(local_file).map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not get metadata of local file: {}", err).as_str());
@@ -62,31 +55,8 @@ pub mod rsync {
         /// Default port: 22
         /// Default keypath: "/home/$HOME/.ssh/id_rsa"
         fn full_backup(&mut self) -> Result<(), ErrorType> {
-
             self.connect()?;
-
-            // key path
-            let private_key_path = Path::new(self.host_config.key_path.as_ref()
-                .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("/home/$HOME/.ssh/id_rsa"))
-            );
-        
-            println!("key_path: {:?}", private_key_path);
-
-            // Authenticate session (private key --> public key)
-            match self.sess.as_ref() {
-                Some(session) => {
-                    if let Err(err) = session.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None) {
-                        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
-                        return Err(ErrorType::Auth);
-                    }
-                },
-                None => {
-                    log_error(ErrorType::Auth, "Session is None");
-                    return Err(ErrorType::Auth);
-                }
-            }
-
-            println!("... auth");
+            self.auth()?;
 
             // format dest path
             self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
@@ -101,7 +71,39 @@ pub mod rsync {
         /// Compare last-modified timestamp of files with matching namesm,
         /// ignoring those with mathching timestamp. 
         fn incremental_backup(&mut self) -> Result<(), ErrorType> {
+            self.connect()?;
+            self.auth()?;
+            
+
+            Ok(())
+        }
+
+        fn auth(&mut self) -> Result<(), ErrorType> {
+            // key path
+            let private_key_path = Path::new(self.host_config.key_path.as_ref()
+                .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("/home/$HOME/.ssh/id_rsa"))
+            );
         
+            println!("key_path: {:?}", private_key_path);
+            println!("user: {}", self.host_config.user);
+            println!("identifier: {:?}", self.host_config.identifier);
+
+            // Authenticate session (private key --> public key)
+           match self.sess.as_ref() {
+                Some(session) => {
+                    if let Err(err) = session.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None) {
+                        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
+                        return Err(ErrorType::Auth);
+                    }
+                },
+                None => {
+                    log_error(ErrorType::Auth, "Session is None");
+                    return Err(ErrorType::Auth);
+                }
+            }
+
+            println!("... auth");
+
             Ok(())
         }
 

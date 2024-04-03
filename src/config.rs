@@ -5,6 +5,9 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::{prelude::*, self, Write, Read};
 
+use crate::traits;
+use traits::FileSerializable;
+
 use crate::logging;
 use logging::{log_error, ErrorType};
 
@@ -67,27 +70,11 @@ impl Settings {
         Self {hosts}
     }
 
-    // json
-    pub fn serialize_json(&self, file_path: &str) -> std::io::Result<()> {
-        let mut file = File::create(file_path)?;
-        let json_str = serde_json::to_string_pretty(&self.hosts)?;
-        write!(file, "{}", json_str)?;
-        Ok(())
-    }
-
-    pub fn deserialize_json(file_path: &str) -> std::io::Result<Self> {
-        let mut file = File::open(file_path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let hosts: Vec<HostConfig> = serde_json::from_str(&contents)?;
-        Ok(Self {hosts})
-    }
-
     pub fn verify_syntax_json(file_path: &str) -> std::io::Result<()> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let host: Vec<HostConfig> = match serde_json::from_str(&contents) {
+        let _: Vec<HostConfig> = match serde_json::from_str(&contents) {
             Ok(v) => v,
             Err(err) => {
                 return Err(err.into());
@@ -97,8 +84,28 @@ impl Settings {
         Ok(())
     }
 
+
+    
+}
+
+impl FileSerializable for Settings {
+    fn serialize_json(&self, file_path: &str) -> std::io::Result<()> {
+        let mut file = File::create(file_path)?;
+        let json_str = serde_json::to_string_pretty(&self.hosts)?;
+        write!(file, "{}", json_str)?;
+        Ok(())
+    }
+
+    fn deserialize_json(file_path: &str) -> std::io::Result<Self> {
+        let mut file = File::open(file_path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let hosts: Vec<HostConfig> = serde_json::from_str(&contents)?;
+        Ok(Self {hosts})
+    }
+
     // yaml
-    pub fn serialize_yaml(&self, file_path: &str) -> std::io::Result<()> {
+    fn serialize_yaml(&self, file_path: &str) -> std::io::Result<()> {
         let mut file = File::create(file_path)?;
         let yaml_str = serde_yaml::to_string(&self.hosts)
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
@@ -111,7 +118,7 @@ impl Settings {
         Ok(())
     }
 
-    pub fn deserialize_yaml(file_path: &str) -> std::io::Result<Self> {
+    fn deserialize_yaml(file_path: &str) -> std::io::Result<Self> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -119,6 +126,4 @@ impl Settings {
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
         Ok(Self { hosts })
     }
-
-    
 }

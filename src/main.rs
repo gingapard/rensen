@@ -1,11 +1,14 @@
+pub mod record;
 pub mod logging;
 pub mod utils;
 pub use utils::hash_file;
 pub mod backup;
 pub mod config;
 pub mod tests;
+pub mod traits;
+pub use traits::{BackupMethod, FileSerializable};
 
-use backup::{rsync, rsync::BackupMethod};
+use backup::rsync;
 
 use config::*;
 use logging::ErrorType;
