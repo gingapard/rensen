@@ -44,7 +44,6 @@ pub mod rsync {
             })?;
 
             let remote_modified = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(remote_metadata.mtime.unwrap_or(0));
-
             Ok(local_modified > remote_modified)
         }
     }
@@ -69,7 +68,7 @@ pub mod rsync {
         }
 
         /// Compare last-modified timestamp of files with matching namesm,
-        /// ignoring those with mathching timestamp. 
+        /// ignoring those with matching timestamp. 
         fn incremental_backup(&mut self) -> Result<(), ErrorType> {
             self.connect()?;
             self.auth()?;
