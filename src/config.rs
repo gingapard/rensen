@@ -35,6 +35,7 @@ pub struct HostConfig {
     pub remote_path: PathBuf,
     pub dest_path: PathBuf,
     pub frequency_hrs: Option<f32>, // default: 24.0
+    pub incremental: Option<bool>,
 }
 
 impl HostConfig {
@@ -48,7 +49,8 @@ impl HostConfig {
         key_path: PathBuf,
         remote_path: PathBuf,
         dest_path: PathBuf,
-        frequency_hrs: f32) -> Self {
+        frequency_hrs: f32,
+        incremental: bool) -> Self {
         Self {
             user,
             identifier,
@@ -57,6 +59,7 @@ impl HostConfig {
             remote_path,
             dest_path,
             frequency_hrs: Some(frequency_hrs),
+            incremental: Some(incremental),
         }
     }
 }

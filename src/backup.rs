@@ -73,6 +73,7 @@ pub mod rsync {
             self.connect()?;
             self.auth()?;
             
+            
 
             Ok(())
         }
@@ -193,6 +194,21 @@ pub mod rsync {
 
         /// Copy remote file (remote_path) to destination (dest_path).
         fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+            match &self.host_config.incremental {
+                Some(v) => {
+                    match v {
+                        true => {
+                            match self.compare_files_modified(dest_path, remote_path)? {
+                                true => {},
+                                _ => (),
+                            }
+                        }
+                        _ => (),
+                    }
+                }
+                _ => (),
+            };
+
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_path).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
                 ErrorType::Copy
