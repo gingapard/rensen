@@ -199,7 +199,7 @@ pub mod rsync {
                     match v {
                         true => {
                             match self.compare_files_modified(dest_path, remote_path)? {
-                                true => {},
+                                true => return Ok(()),
                                 _ => (),
                             }
                         }
