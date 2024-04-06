@@ -7,3 +7,4 @@
   remote_path: /home/cbroo/secs/
   dest_path: /home/bam/backups/
   frequency_hrs: 24.0
+  incremental: true

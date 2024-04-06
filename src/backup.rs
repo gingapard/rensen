@@ -192,6 +192,7 @@ pub mod rsync {
 
                 if stat.is_file() {
                     self.copy_remote_file(&new_remote_path, &new_dest_path)?;
+                    let _ = self.compare_files_modified(&new_dest_path, &new_remote_path).unwrap();
                 }
                 else if stat.is_dir() {
                     let dest_subdir_path = dest_path.join(&entryname);
