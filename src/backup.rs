@@ -8,6 +8,7 @@ pub mod rsync {
     use crate::traits::BackupMethod;
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
+    use crate::utils::archive_compress_dir;
 
     pub struct Rsync<'a> {
         pub host_config: &'a mut HostConfig,
@@ -62,18 +63,32 @@ pub mod rsync {
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
-            println!("... copied files");
+            let _ = archive_compress_dir(&self.host_config.dest_path, 
+                                         Path::new(format!("{}.tar.gz", &self.host_config.dest_path.to_str().unwrap_or("// empty //")) .as_str())
+            );
             
+            println!("... copied files");
             Ok(())
         }
 
         /// Compare last-modified timestamp of files with matching namesm,
         /// ignoring those with matching timestamp. 
+        /// You take one full backup, and the take incremental backups 
+        /// the next days. Put a setting to take a new *full* backup every week or so.
+        /// Backups older than a specific amount (maybe 30 days) will be deleted.
+        /// 
+        /// ***File structure***
+        ///
+        /// 192.168.x.x
+        ///     | record.yaml
+        ///     | first_full_backup.tar.gz
+        ///     | next_incremental_backup.tar.gz
+        ///     | ...tar.gz
+        ///
+        ///
         fn incremental_backup(&mut self) -> Result<(), ErrorType> {
             self.connect()?;
             self.auth()?;
-            
-            
 
             Ok(())
         }
@@ -172,11 +187,11 @@ pub mod rsync {
                 };
 
                 // format paths
-                let remote_file_path = remote_path.join(entryname);
-                let dest_file_path = dest_path.join(&entryname);
+                let new_remote_path = remote_path.join(entryname);
+                let new_dest_path = dest_path.join(entryname);
 
                 if stat.is_file() {
-                    self.copy_remote_file(&remote_file_path, &dest_file_path)?;
+                    self.copy_remote_file(&new_remote_path, &new_dest_path)?;
                 }
                 else if stat.is_dir() {
                     let dest_subdir_path = dest_path.join(&entryname);
@@ -185,7 +200,7 @@ pub mod rsync {
                         ErrorType::FS
                     })?;
 
-                    self.copy_remote_directory(&remote_file_path, &dest_file_path)?;
+                    self.copy_remote_directory(&new_remote_path, &new_dest_path)?;
                 }
             }
            

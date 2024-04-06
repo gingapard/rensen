@@ -12,7 +12,7 @@ use logging::{log_error, ErrorType};
 
 /// Archive directory with Tarball (tar::Builder) and
 /// compress with Gz (flate2::write::GzeEncoder, flate2::Compression).
-pub fn archive_compress_dir(path: &str, output_file_path: &str) -> io::Result<()> {
+pub fn archive_compress_dir(path: &Path, output_file_path: &Path) -> io::Result<()> {
     // Temp tar file
     let tar_file_path = "temp.tar";
     let tar_file = File::create(tar_file_path)?;
@@ -28,16 +28,19 @@ pub fn archive_compress_dir(path: &str, output_file_path: &str) -> io::Result<()
     let gz_encoder = GzEncoder::new(BufWriter::new(gz_file), Compression::default());
     io::copy(&mut BufReader::new(tar_file), &mut BufWriter::new(gz_encoder))?;
 
-    // Cleanup: remove temp tar file
+    // Cleanup: remove temp tar file, remove uncompressed file
     fs::remove_file(tar_file_path)?;
+    if path != Path::new("/") {
+        let _ = fs::remove_dir_all(path);
+    }
 
     Ok(())
 }
 
 fn add_dir_contents_to_tar(
-    root: &str,
+    root: &Path,
     tar_builder: &mut Builder<File>,
-    dir: &str,
+    dir: &Path,
 ) -> io::Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -46,7 +49,7 @@ fn add_dir_contents_to_tar(
 
         if path.is_dir() {
             tar_builder.append_dir(name, &path)?;
-            add_dir_contents_to_tar(root, tar_builder, &path.to_string_lossy())?;
+            add_dir_contents_to_tar(root, tar_builder, &path)?;
         } else {
             tar_builder.append_path_with_name(&path, name)?;
         }
