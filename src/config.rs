@@ -73,7 +73,7 @@ impl Settings {
         Self {hosts}
     }
 
-    pub fn verify_syntax_json(file_path: &str) -> std::io::Result<()> {
+    pub fn verify_syntax_json(file_path: &Path) -> std::io::Result<()> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -92,14 +92,14 @@ impl Settings {
 }
 
 impl FileSerializable for Settings {
-    fn serialize_json(&self, file_path: &str) -> std::io::Result<()> {
+    fn serialize_json(&self, file_path: &Path) -> std::io::Result<()> {
         let mut file = File::create(file_path)?;
         let json_str = serde_json::to_string_pretty(&self.hosts)?;
         write!(file, "{}", json_str)?;
         Ok(())
     }
 
-    fn deserialize_json(file_path: &str) -> std::io::Result<Self> {
+    fn deserialize_json(file_path: &Path) -> std::io::Result<Self> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -108,7 +108,7 @@ impl FileSerializable for Settings {
     }
 
     // yaml
-    fn serialize_yaml(&self, file_path: &str) -> std::io::Result<()> {
+    fn serialize_yaml(&self, file_path: &Path) -> std::io::Result<()> {
         let mut file = File::create(file_path)?;
         let yaml_str = serde_yaml::to_string(&self.hosts)
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
@@ -121,7 +121,7 @@ impl FileSerializable for Settings {
         Ok(())
     }
 
-    fn deserialize_yaml(file_path: &str) -> std::io::Result<Self> {
+    fn deserialize_yaml(file_path: &Path) -> std::io::Result<Self> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

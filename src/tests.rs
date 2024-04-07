@@ -1,4 +1,5 @@
 use crate::config;
+use crate::traits::FileSerializable;
 use config::Settings;
 use std::path::Path;
 
@@ -6,7 +7,7 @@ use std::path::Path;
 #[test]
 pub fn test_serialize_json() {
 
-    let path = "tests/test.json";
+    let path = Path::new("../tests/test.json");
     // first host
     let host1 = config::HostConfig::new(
         "user".to_string(),
@@ -16,6 +17,7 @@ pub fn test_serialize_json() {
         Path::new("remote/path").to_path_buf(),
         Path::new("dest/path").to_path_buf(),
         24.0,
+        true,
     );
 
     let settings: Settings = Settings::new(vec![host1]);
@@ -24,13 +26,13 @@ pub fn test_serialize_json() {
 
 #[test]
 pub fn test_deserialize_json() {
-    let path = "tests/test.json";
+    let path = Path::new("tests/test.json");
     let settings = Settings::deserialize_json(path).unwrap();
 }
 
 #[test]
 pub fn test_serialize_yaml() {
-    let path = "tests/test.yaml";
+    let path = Path::new("tests/test.yaml");
     let host1 = config::HostConfig::new(
         "user".to_string(),
         config::HostIdentifier::Ip(String::from("192.168.1.0/24")),
@@ -39,6 +41,7 @@ pub fn test_serialize_yaml() {
         Path::new("remote/path").to_path_buf(),
         Path::new("dest/path").to_path_buf(),
         24.0,
+        false,
     );
 
     let settings: Settings = Settings::new(vec![host1]);
@@ -47,7 +50,7 @@ pub fn test_serialize_yaml() {
 
 #[test]
 pub fn test_deserialize_yaml() {
-    let path = "tests/test.yaml";
+    let path = Path::new("tests/test.yaml");
     let settings = Settings::deserialize_yaml(path).unwrap();
 }
 

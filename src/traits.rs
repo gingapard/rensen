@@ -4,13 +4,13 @@ use std::path::Path;
 
 pub trait FileSerializable: Sized { 
     /// Wrapper for serde::json
-    fn serialize_json(&self, file_path: &str) -> std::io::Result<()>;
+    fn serialize_json(&self, file_path: &Path) -> std::io::Result<()>;
     /// Wrapper for serde::json
-    fn deserialize_json(file_path: &str) -> std::io::Result<Self>;
+    fn deserialize_json(file_path: &Path) -> std::io::Result<Self>;
     /// Wrapper for serde::yaml
-    fn serialize_yaml(&self, file_path: &str) -> std::io::Result<()>;
+    fn serialize_yaml(&self, file_path: &Path) -> std::io::Result<()>;
     /// Wrapper for serde::yaml
-    fn deserialize_yaml(file_path: &str) -> std::io::Result<Self>;
+    fn deserialize_yaml(file_path: &Path) -> std::io::Result<Self>;
 }
 
 pub trait BackupMethod {

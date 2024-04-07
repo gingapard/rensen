@@ -1,26 +1,49 @@
 use serde::{Serialize, Deserialize};
 use std::fs::File;
+use std::path::Path;
 use std::io::{self, prelude::*};
+use std::collections::HashMap;
 use crate::traits::FileSerializable;
+
+
+#[cfg(test)]
+#[test]
+fn test_serialize_record() {
+    let mut entries: HashMap<String, u64> = HashMap::new();  
+    entries.insert("/home/bam/backups/file1".to_string(), 90);
+    entries.insert("/home/bam/backups/file2".to_string(), 1238947);
+    entries.insert("/home/bam/backups/file3".to_string(), 239847298);
+    entries.insert("/home/bam/backups/file4".to_string(), 2398129837);
+    entries.insert("/home/bam/backups/file5".to_string(), 9812837123);
+
+    let record = Record::new(entries);
+    record.serialize_json(Path::new("record.json")).unwrap();
+}
 
 /* listened to "Plastic Love" while coding this. */
 
+/// A record storing the data for precompressed files.
 #[derive(Serialize, Deserialize)]
 pub struct Record {
-    entries: Vec<(String, u64)>,
-    len: usize,
+    entries: HashMap<String, u64>,
+}
+
+impl Record {
+    fn new(entries: HashMap<String, u64>) -> Self {
+        Self { entries }
+    }
 }
 
 impl FileSerializable for Record {
 
-    fn serialize_json(&self, file_path: &str) -> std::io::Result<()> {
+    fn serialize_json(&self, file_path: &Path) -> std::io::Result<()> {
         let mut file = File::create(file_path)?;
         let json_str = serde_json::to_string_pretty(&self)?;
         write!(file, "{}", json_str)?;
         Ok(())
     }
 
-    fn deserialize_json(file_path: &str) -> std::io::Result<Self> {
+    fn deserialize_json(file_path: &Path) -> std::io::Result<Self> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -29,7 +52,7 @@ impl FileSerializable for Record {
     }
 
     // yaml
-    fn serialize_yaml(&self, file_path: &str) -> std::io::Result<()> {
+    fn serialize_yaml(&self, file_path: &Path) -> std::io::Result<()> {
         let mut file = File::create(file_path)?;
         let yaml_str = serde_yaml::to_string(&self)
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
@@ -42,7 +65,7 @@ impl FileSerializable for Record {
         Ok(())
     }
 
-    fn deserialize_yaml(file_path: &str) -> std::io::Result<Self> {
+    fn deserialize_yaml(file_path: &Path) -> std::io::Result<Self> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

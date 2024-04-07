@@ -7,3 +7,4 @@
   remote_path: remote/path
   dest_path: dest/path
   frequency_hrs: 24.0
+  incremental: false
