@@ -20,6 +20,12 @@ fn test_serialize_record() {
     record.serialize_json(Path::new("record.json")).unwrap();
 }
 
+#[test]
+fn test_deserialize_record() {
+    let record: Record = Record::deserialize_json(Path::new("tests/record.json")).unwrap();
+    println!("{:?}", record.entries);
+}
+
 /* listened to "Plastic Love" while coding this. */
 
 /// A record storing the data for precompressed files.
