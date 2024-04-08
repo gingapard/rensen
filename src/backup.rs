@@ -9,27 +9,37 @@ pub mod rsync {
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
     use crate::utils::archive_compress_dir;
+    use crate::record::Record;
 
     pub struct Rsync<'a> {
         pub host_config: &'a mut HostConfig,
-        // pub record: Record
+        pub record: Record,
         pub sess: Option<Session>
     }
 
     impl<'a> Rsync<'a> {
-        pub fn new(host_config: &'a mut HostConfig) -> Self {
-            Self {host_config, sess: None}
+        pub fn new(host_config: &'a mut HostConfig, record: Record) -> Self {
+            Self {host_config, record, sess: None}
         }
 
-        /// Compares one local file and one remote files last modified timestamp (metadata).
-        pub fn compare_files_modified(&self, local_file: &Path, remote_file: &Path) -> Result<bool, ErrorType> {
-            // todo: compact code
+        /// Returns last_modified_time for a local file from metadata in secs (as u64)
+        pub fn local_file_modified_time(&self, local_file: &Path) -> Result<u64, ErrorType> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not get metadata of local file: {}", err).as_str());
                 ErrorType::FS
             })?;
 
-            let sftp = self.sess.as_ref().unwrap().sftp().map_err(|err| {
+            let local_modified = local_metadata.modified().map_err(|err| {
+                log_error(ErrorType::FS, format!("Could not get mod time of local file: {}", err).as_str());
+                ErrorType::FS
+            })?;
+
+            Ok(local_modified.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())
+        }
+
+        /// Returns last_modified_time for a remote file from metadata in secs (as u64)
+        pub fn remote_file_modified_time(&self, remote_file: &Path) -> Result<u64, ErrorType> {
+            let sftp = self.sess.as_ref().ok_or(ErrorType::FS)?.sftp().map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not init SFTP session: {}", err).as_str());
                 ErrorType::FS
             })?;
@@ -39,13 +49,7 @@ pub mod rsync {
                 ErrorType::FS
             })?;
 
-            let local_modified = local_metadata.modified().map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not get mod time of local file: {}", err).as_str());
-                ErrorType::FS
-            })?;
-
-            let remote_modified = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(remote_metadata.mtime.unwrap_or(0));
-            Ok(local_modified > remote_modified)
+            Ok(remote_metadata.mtime.unwrap_or(0))
         }
     }
 
