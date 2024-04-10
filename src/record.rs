@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::{self, prelude::*};
 use std::collections::HashMap;
 use crate::traits::FileSerializable;
@@ -9,12 +9,12 @@ use crate::traits::FileSerializable;
 #[cfg(test)]
 #[test]
 fn test_serialize_record() {
-    let mut entries: HashMap<String, u64> = HashMap::new();  
-    entries.insert("/home/bam/backups/file1".to_string(), 90);
-    entries.insert("/home/bam/backups/file2".to_string(), 1238947);
-    entries.insert("/home/bam/backups/file3".to_string(), 239847298);
-    entries.insert("/home/bam/backups/file4".to_string(), 2398129837);
-    entries.insert("/home/bam/backups/file5".to_string(), 9812837123);
+    let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
+    entries.insert("/home/bam/backups/file1".into(), 90);
+    entries.insert("/home/bam/backups/file2".into(), 1238947);
+    entries.insert("/home/bam/backups/file3".into(), 239847298);
+    entries.insert("/home/bam/backups/file4".into(), 2398129837);
+    entries.insert("/home/bam/backups/file5".into(), 9812837123);
 
     let record = Record::new(entries);
     record.serialize_json(Path::new("record.json")).unwrap();
@@ -31,11 +31,11 @@ fn test_deserialize_record() {
 /// A record storing the data for precompressed files.
 #[derive(Serialize, Deserialize)]
 pub struct Record {
-    entries: HashMap<String, u64>,
+    pub entries: HashMap<PathBuf, u64>,
 }
 
 impl Record {
-    fn new(entries: HashMap<String, u64>) -> Self {
+    pub fn new(entries: HashMap<PathBuf, u64>) -> Self {
         Self { entries }
     }
 }

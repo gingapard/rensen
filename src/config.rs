@@ -4,6 +4,7 @@ use serde_yaml;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::{prelude::*, self, Write, Read};
+use std::fmt;
 
 use crate::traits;
 use traits::FileSerializable;
@@ -15,6 +16,15 @@ use logging::{log_error, ErrorType};
 pub enum HostIdentifier {
     Ip(String),
     Hostname(String),
+}
+
+impl fmt::Display for HostIdentifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Ip(ip) => write!(f, "IP: {}", ip),
+            Self::Hostname(hostname) => write!(f, "Hostname: {}", hostname),
+        }
+    }
 }
 
 impl AsRef<Path> for HostIdentifier {

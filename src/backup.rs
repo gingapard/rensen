@@ -4,8 +4,8 @@ pub mod rsync {
     use std::net::TcpStream;
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
-    use std::path::Path;
-    use crate::traits::BackupMethod;
+    use std::path::{Path, PathBuf};
+    use crate::traits::{BackupMethod, FileSerializable};
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
     use crate::utils::archive_compress_dir;
@@ -14,16 +14,22 @@ pub mod rsync {
     pub struct Rsync<'a> {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
-        pub sess: Option<Session>
+        pub sess: Option<Session>,
+        pub index: usize
     }
 
     impl<'a> Rsync<'a> {
         pub fn new(host_config: &'a mut HostConfig, record: Record) -> Self {
-            Self {host_config, record, sess: None}
+            Self {
+                host_config,
+                record,
+                sess: None,
+                index: 0
+            }
         }
 
-        /// Returns last_modified_time for a local file from metadata in secs (as u64)
-        pub fn local_file_modified_time(&self, local_file: &Path) -> Result<u64, ErrorType> {
+        /// Returns last_modified_time from metadata in secs (as u64)
+        pub fn local_file_modified_time(&self, local_file: &PathBuf) -> Result<u64, ErrorType> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not get metadata of local file: {}", err).as_str());
                 ErrorType::FS
@@ -51,6 +57,24 @@ pub mod rsync {
 
             Ok(remote_metadata.mtime.unwrap_or(0))
         }
+
+        fn recurs_update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+            if let Ok(entries) = fs::read_dir(base_path) {
+                for entry in entries {
+                    let entry = entry.unwrap();
+                    let current_path = entry.path();
+
+                    if current_path.is_dir() {
+                        self.recurs_update_record(&current_path)?;
+                    }
+                    else {
+                        self.record.entries.insert(current_path.clone(), self.local_file_modified_time(&current_path)?);
+                    }
+                }
+            }
+
+            Ok(())
+        }
     }
 
     impl BackupMethod for Rsync<'_> {
@@ -62,13 +86,28 @@ pub mod rsync {
             self.connect()?;
             self.auth()?;
 
-            // format dest path
+            /* Formatting dest_path to fit into file structure
+             * Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
+             * Result = dest_path/identifier/remote_dir/ ex.
+             * /home/user/backups/192.168.1.1/backupped_files
+             */
             self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
+            self.host_config.dest_path = if let Some(stem) = self.host_config.remote_path.file_stem() {
+                self.host_config.dest_path.join(stem)
+            } else {
+                self.host_config.dest_path.join(format!("{}", self.host_config.identifier))  
+            };
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
+
+            // update records
+            self.record.entries.clear();
+            self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
+            let _ = self.record.serialize_json(Path::new("record.json"));
+
             let _ = archive_compress_dir(&self.host_config.dest_path, 
-                                         Path::new(format!("{}.tar.gz", &self.host_config.dest_path.to_str().unwrap_or("// empty //")) .as_str())
+                Path::new(format!("{}.tar.gz", &self.host_config.dest_path.to_str().unwrap_or("throw")) .as_str())
             );
             
             println!("... copied files");
@@ -196,7 +235,6 @@ pub mod rsync {
 
                 if stat.is_file() {
                     self.copy_remote_file(&new_remote_path, &new_dest_path)?;
-                    let _ = self.compare_files_modified(&new_dest_path, &new_remote_path).unwrap();
                 }
                 else if stat.is_dir() {
                     let dest_subdir_path = dest_path.join(&entryname);
@@ -214,20 +252,8 @@ pub mod rsync {
 
         /// Copy remote file (remote_path) to destination (dest_path).
         fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
-            match &self.host_config.incremental {
-                Some(v) => {
-                    match v {
-                        true => {
-                            match self.compare_files_modified(dest_path, remote_path)? {
-                                true => return Ok(()),
-                                _ => (),
-                            }
-                        }
-                        _ => (),
-                    }
-                }
-                _ => (),
-            };
+            let test_var = &self.remote_file_modified_time(&remote_path).unwrap();
+            println!("{}", test_var);
 
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_path).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
