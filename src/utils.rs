@@ -1,14 +1,37 @@
 use std::fs::{self, File};
-use std::io::{self, Seek, SeekFrom,  BufReader, BufWriter};
+use std::io::{self, SeekFrom, BufReader, BufWriter};
 use std::path::Path;
 use std::io::prelude::*;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use tar::Builder;
 use sha3::{Digest, Sha3_256};
+use std::os::unix::fs::{PermissionsExt, MetadataExt, FileExt};
+use std::time::{SystemTime, Duration};
+use ssh2::FileStat;
 
 use crate::logging;
 use logging::{log_error, ErrorType};
+
+pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), ErrorType> {
+
+    // len/size
+    let _ = file.set_len(stat.size.unwrap_or(0));
+
+    // Permissions
+    if let Some(raw_perms) = stat.perm {
+        let _ = file.set_permissions(PermissionsExt::from_mode(raw_perms));
+    }
+
+    // File Times
+    let file_times = fs::FileTimes::new();
+    file_times.set_accessed(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.atime.unwrap_or(0)));
+    file_times.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.mtime.unwrap_or(0)));
+    let _ = file.set_times(file_times);
+    let _ = file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.mtime.unwrap_or(0)));
+
+    Ok(())
+}
 
 /// Archive directory with Tarball (tar::Builder) and
 /// compress with Gz (flate2::write::GzeEncoder, flate2::Compression).

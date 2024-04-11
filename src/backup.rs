@@ -5,10 +5,11 @@ pub mod rsync {
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
     use std::path::{Path, PathBuf};
+    use std::os::unix::fs::MetadataExt;
     use crate::traits::{BackupMethod, FileSerializable};
     use crate::logging::{log_error, ErrorType, log_info, InfoType};
     use crate::config::*;
-    use crate::utils::archive_compress_dir;
+    use crate::utils::{archive_compress_dir, set_metadata};
     use crate::record::Record;
 
     pub struct Rsync<'a> {
@@ -43,19 +44,24 @@ pub mod rsync {
             Ok(local_modified.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())
         }
 
-        /// Returns last_modified_time for a remote file from metadata in secs (as u64)
-        pub fn remote_file_modified_time(&self, remote_file: &Path) -> Result<u64, ErrorType> {
+        /// Wrapper for SFTP::stat
+        pub fn remote_filestat(&self, remote_file: &Path) -> Result<FileStat, ErrorType> {
             let sftp = self.sess.as_ref().ok_or(ErrorType::FS)?.sftp().map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not init SFTP session: {}", err).as_str());
                 ErrorType::FS
             })?;
 
-            let remote_metadata = sftp.stat(remote_file).map_err(|err| {
+            let stat = sftp.stat(remote_file).map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not get metadata of remote file: {}", err).as_str());
                 ErrorType::FS
             })?;
 
-            Ok(remote_metadata.mtime.unwrap_or(0))
+            Ok(stat)
+        }
+
+        /// Returns last_modified_time for a remote file from metadata in secs (as u64)
+        fn remote_file_mtime(&self, remote_file: &Path) -> Result<u64, ErrorType> {
+            Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(0))
         }
 
         fn recurs_update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
@@ -100,7 +106,6 @@ pub mod rsync {
 
             // Copy remote path and all of it's content
             self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
-
             // update records
             self.record.entries.clear();
             self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
@@ -252,9 +257,6 @@ pub mod rsync {
 
         /// Copy remote file (remote_path) to destination (dest_path).
         fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
-            let test_var = &self.remote_file_modified_time(&remote_path).unwrap();
-            println!("{}", test_var);
-
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_path).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
                 ErrorType::Copy
@@ -282,6 +284,13 @@ pub mod rsync {
                     }
                 }
             }
+
+            // Sets metadata for the newly created file to the same as the remote file.
+            let stat = self.remote_filestat(remote_path)?;
+            let _ = set_metadata(&mut file, stat);
+
+            let m_data = file.metadata();
+            println!("{:?}", m_data.unwrap().modified());
 
             Ok(())
         }
