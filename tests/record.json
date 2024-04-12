@@ -1,9 +1,7 @@
 {
   "entries": {
-    "/home/bam/backups/file5": 9812837123,
-    "/home/bam/backups/file2": 1238947,
-    "/home/bam/backups/file3": 239847298,
-    "/home/bam/backups/file4": 2398129837,
-    "/home/bam/backups/file1": 90
+    "/home/bam/backups/192.168.1.47/secs/test1": 1712763874,
+    "/home/bam/backups/192.168.1.47/secs/pass": 1712763562,
+    "/home/bam/backups/192.168.1.47/secs/.encfs6.xml": 1706476103
   }
 }
