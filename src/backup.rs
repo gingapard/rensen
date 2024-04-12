@@ -5,9 +5,8 @@ pub mod rsync {
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
     use std::path::{Path, PathBuf};
-    use std::os::unix::fs::MetadataExt;
     use crate::traits::{BackupMethod, FileSerializable};
-    use crate::logging::{log_error, ErrorType, log_info, InfoType};
+    use crate::logging::{log_error, ErrorType};
     use crate::config::*;
     use crate::utils::{archive_compress_dir, set_metadata};
     use crate::record::Record;
@@ -92,11 +91,11 @@ pub mod rsync {
             self.connect()?;
             self.auth()?;
 
-            /* Formatting dest_path to fit into file structure
-             * Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
-             * Result = dest_path/identifier/remote_dir/ ex.
-             * /home/user/backups/192.168.1.1/backupped_files
-             */
+            //Formatting dest_path to fit into file structure
+            // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
+            // Result = dest_path/identifier/remote_dir/ ex.
+            //
+            // $HOME/dest_path/identifier/$FILES
             self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
             self.host_config.dest_path = if let Some(stem) = self.host_config.remote_path.file_stem() {
                 self.host_config.dest_path.join(stem)
@@ -109,7 +108,11 @@ pub mod rsync {
             // update records
             self.record.entries.clear();
             self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
-            let _ = self.record.serialize_json(Path::new("record.json"));
+
+            // Ensure "record.json" is put in with the backupped files' root folder
+            // ($HOME/dest_path/identifier)
+            let record_path = self.host_config.dest_path.join("record.json"); 
+            let _ = self.record.serialize_json(&record_path);
 
             let _ = archive_compress_dir(&self.host_config.dest_path, 
                 Path::new(format!("{}.tar.gz", &self.host_config.dest_path.to_str().unwrap_or("throw")) .as_str())
