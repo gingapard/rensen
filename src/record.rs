@@ -38,6 +38,13 @@ impl Record {
     pub fn new(entries: HashMap<PathBuf, u64>) -> Self {
         Self { entries }
     }
+
+    pub fn mtime(&self, file_path: &Path) -> Option<&u64> {
+        match self.entries.contains_key(file_path) {
+            true => Some(self.entries.get(file_path)?),
+            _ => None
+        }
+    }
 }
 
 impl FileSerializable for Record {

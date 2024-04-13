@@ -29,7 +29,7 @@ pub mod rsync {
         }
 
         /// Returns last_modified_time from metadata in secs (as u64)
-        pub fn local_file_modified_time(&self, local_file: &PathBuf) -> Result<u64, ErrorType> {
+        pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, ErrorType> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not get metadata of local file: {}", err).as_str());
                 ErrorType::FS
@@ -73,7 +73,7 @@ pub mod rsync {
                         self.recurs_update_record(&current_path)?;
                     }
                     else {
-                        self.record.entries.insert(current_path.clone(), self.local_file_modified_time(&current_path)?);
+                        self.record.entries.insert(current_path.clone(), self.local_file_mtime(&current_path)?);
                     }
                 }
             }
@@ -110,7 +110,7 @@ pub mod rsync {
             self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
 
             // Ensure "record.json" is put in with the backupped files' root folder
-            // ($HOME/dest_path/identifier)
+            // ($HOME/dest_path/identifier/record.json)
             let record_path = self.host_config.dest_path.join("record.json"); 
             let _ = self.record.serialize_json(&record_path);
 
@@ -260,6 +260,22 @@ pub mod rsync {
 
         /// Copy remote file (remote_path) to destination (dest_path).
         fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+            // check if the function is used to copying incrementally
+            let mode = &self.host_config.incremental.unwrap_or(false);
+            if *mode {
+                let remote_mtime: &u64 = &self.remote_file_mtime(remote_path)?; 
+                // let local_mtime: &u64 = &self.record.mtime(key)?;
+                // TODO: Add some sort of root path for all local stored path. So all "unique"
+                // files would have a identifier
+                // Also find out more of the fs before staring implemting incremental backup fully.
+                
+            }
+
+           /*---------------------------------------------------------------------------*
+            * Staring proceess of copying the file from remote to locally, also ensuring*
+            * metadata and permissons of the the file.                                  *
+            *---------------------------------------------------------------------------*/
+
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_path).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
                 ErrorType::Copy
