@@ -15,7 +15,6 @@ pub mod rsync {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
         pub sess: Option<Session>,
-        pub index: usize
     }
 
     impl<'a> Rsync<'a> {
@@ -24,7 +23,7 @@ pub mod rsync {
                 host_config,
                 record,
                 sess: None,
-                index: 0
+                
             }
         }
 
@@ -131,10 +130,16 @@ pub mod rsync {
         /// ***File structure***
         ///
         /// 192.168.x.x
-        ///     | record.yaml
+        ///     | record.json
         ///     | first_full_backup.tar.gz
         ///     | next_incremental_backup.tar.gz
         ///     | ...tar.gz
+        ///
+        ///
+        /// *record.json*
+        /// 
+        /// path: mtime as u64,
+        /// ...
         ///
         ///
         fn incremental_backup(&mut self) -> Result<(), ErrorType> {
