@@ -15,7 +15,8 @@ use crate::logging;
 use logging::{log_error, ErrorType};
 
 pub fn get_datetime() -> String {
-    return Utc::now().to_string();
+  let now = Utc::now();
+  return format!("{}", now.format("%Y%m%dT%H%M%SZ"));
 }
 
 /// Sets the metadata for $file according to $stat

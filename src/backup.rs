@@ -77,6 +77,8 @@ pub mod rsync {
                 }
             }
 
+            self.record.interval += 1;
+
             Ok(())
         }
     }
@@ -112,16 +114,18 @@ pub mod rsync {
             };
 
             // Copy remote path and all of it's content
-            self.copy_remote_directory(&self.host_config.remote_path, &complete_dest_path)?;
+            let remote_path = self.host_config.remote_path.clone();
+            self.copy_remote_directory(&remote_path, &complete_dest_path)?;
             // update records
-            self.record.entries.clear();
-            self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
+            // self.record.entries.clear();
+            // self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
 
             // Ensure "record.json" is put in with the backupped files' root folder
             // ($HOME/dest_path/identifier/record.json)
-            let record_path = self.host_config.dest_path.join("record.json"); 
-            let _ = self.record.serialize_json(&record_path);
+            let mut record_path = self.host_config.dest_path.clone();
+            record_path.pop();
 
+            let _ = self.record.serialize_json(&record_path.join("record.json"));
             let _ = archive_compress_dir(&self.host_config.dest_path, 
                 Path::new(format!("{}.tar.gz", &self.host_config.dest_path.to_str().unwrap_or("throw")) .as_str())
             );
@@ -136,12 +140,14 @@ pub mod rsync {
         /// the next days. Put a setting to take a new *full* backup every week or so.
         /// Backups older than a specific amount (maybe 30 days) will be deleted.
         /// 
-        /// ***File structure***
+        /// ***File structure example***
         ///
-        /// 192.168.x.x
+        /// 192.168.1.220
         ///     | record.json
         ///     | 2023-01-11_12-34-56.tar.gz
+        ///         | 'remote_path_stem/'
         ///     | 2023-01-12_12-34-56.tar.gz
+        ///         | 'remote_path_stem/'
         ///     | ...tar.gz
         ///
         ///
@@ -221,7 +227,7 @@ pub mod rsync {
         
         /// Copy remote directory to destination.
         /// Will recurse and call copy_remote_file(...) until all contents are copied.
-        fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_directory(&mut self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
             // Create destination directory if it doesn't exist
             if !dest_path.exists() {
                 fs::create_dir_all(dest_path).map_err(|err| {
@@ -273,7 +279,7 @@ pub mod rsync {
         }
 
         /// Copy remote file (remote_path) to destination (dest_path).
-        fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_file(&mut self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
             // check if the function is used to copying incrementally
             let mode = &self.host_config.incremental.unwrap_or(false);
             if *mode {
@@ -321,6 +327,9 @@ pub mod rsync {
             // Sets metadata for the newly created file to the same as the remote file.
             let stat = self.remote_filestat(remote_path)?;
             let _ = set_metadata(&mut file, stat);
+
+            // Update recordawdawdawdawdak
+            self.record.entries.insert(remote_path.to_path_buf(), self.local_file_mtime(dest_path)?); 
 
             let m_data = file.metadata();
             println!("{:?}", m_data.unwrap().modified());

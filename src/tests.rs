@@ -43,8 +43,19 @@ pub fn test_serialize_yaml() {
         24.0,
         false,
     );
+    
+    let host2 = config::HostConfig::new(
+        "user2".to_string(),
+        config::HostIdentifier::Ip(String::from("192.168.1.0/24")),
+        22,
+        Path::new("~/.ssh/testkey").to_path_buf(),
+        Path::new("remote/path").to_path_buf(),
+        Path::new("dest/path").to_path_buf(),
+        24.0,
+        false,
+    );
 
-    let settings: Settings = Settings::new(vec![host1]);
+    let settings: Settings = Settings::new(vec![host1, host2]);
     settings.serialize_yaml(path).unwrap();
 }
 

@@ -18,6 +18,6 @@ pub trait BackupMethod {
     fn incremental_backup(&mut self) -> Result<(), ErrorType>;
     fn auth(&mut self) -> Result<(), ErrorType>;
     fn connect(&mut self) -> Result<(), ErrorType>;
-    fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
-    fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
+    fn copy_remote_directory(&mut self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
+    fn copy_remote_file(&mut self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
 }
