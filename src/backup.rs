@@ -8,7 +8,7 @@ pub mod rsync {
     use crate::traits::{BackupMethod, FileSerializable};
     use crate::logging::{log_error, ErrorType};
     use crate::config::*;
-    use crate::utils::{archive_compress_dir, set_metadata};
+    use crate::utils::{archive_compress_dir, set_metadata, get_datetime};
     use crate::record::Record;
 
     pub struct Rsync<'a> {
@@ -85,7 +85,7 @@ pub mod rsync {
 
         /// Remote sync backup using ssh/sftp
         /// Default port: 22
-        /// Default keypath: "/home/$HOME/.ssh/id_rsa"
+        /// Default keypath: "$HOME/.ssh/id_rsa"
         fn full_backup(&mut self) -> Result<(), ErrorType> {
             self.connect()?;
             self.auth()?;
@@ -94,16 +94,25 @@ pub mod rsync {
             // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
             // Result = dest_path/identifier/remote_dir/ ex.
             //
-            // $HOME/dest_path/identifier/$FILES
+            // $HOME/dest_path/identifier/filestem
+            //
+            // Adding identifer: $HOME/dest_path/$identifier
             self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
-            self.host_config.dest_path = if let Some(stem) = self.host_config.remote_path.file_stem() {
+            // Adding current_time: $HOME/dest_path/$identifier/$current_time
+            self.host_config.dest_path = self.host_config.dest_path.join(get_datetime());
+
+            // Adding filestem: $HOME/dest_path/identifier/$current_time/$filestem
+            // This is the complete dest_path, where the files will be copied to.
+            // The self.host_config.dest_path is still preserved so that it can
+            // be archived and compressed later.
+            let complete_dest_path = if let Some(stem) = &self.host_config.remote_path.file_stem() {
                 self.host_config.dest_path.join(stem)
             } else {
                 self.host_config.dest_path.join(format!("{}", self.host_config.identifier))  
             };
 
             // Copy remote path and all of it's content
-            self.copy_remote_directory(&self.host_config.remote_path, &self.host_config.dest_path)?;
+            self.copy_remote_directory(&self.host_config.remote_path, &complete_dest_path)?;
             // update records
             self.record.entries.clear();
             self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
@@ -131,8 +140,8 @@ pub mod rsync {
         ///
         /// 192.168.x.x
         ///     | record.json
-        ///     | first_full_backup.tar.gz
-        ///     | next_incremental_backup.tar.gz
+        ///     | 2023-01-11_12-34-56.tar.gz
+        ///     | 2023-01-12_12-34-56.tar.gz
         ///     | ...tar.gz
         ///
         ///

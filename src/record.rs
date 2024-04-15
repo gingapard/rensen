@@ -5,7 +5,6 @@ use std::io::{self, prelude::*};
 use std::collections::HashMap;
 use crate::traits::FileSerializable;
 
-
 #[cfg(test)]
 #[test]
 fn test_serialize_record() {
@@ -31,12 +30,18 @@ fn test_deserialize_record() {
 /// A record storing the data for precompressed files.
 #[derive(Serialize, Deserialize)]
 pub struct Record {
+    pub interval: u8,
+    pub last_interval: String,
     pub entries: HashMap<PathBuf, u64>,
 }
 
 impl Record {
     pub fn new(entries: HashMap<PathBuf, u64>) -> Self {
-        Self { entries }
+        Self {
+            interval: 0,
+            last_interval: String::new(),
+            entries,
+        }
     }
 
     pub fn mtime(&self, file_path: &Path) -> Option<&u64> {
