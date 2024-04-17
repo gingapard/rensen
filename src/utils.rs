@@ -16,7 +16,7 @@ use logging::{log_error, ErrorType};
 
 pub fn get_datetime() -> String {
   let now = Utc::now();
-  return format!("{}", now.format("%Y%m%dT%H%M%SZ"));
+  return format!("{}", now.format("%Y-%m-%d-%H-%M-%SZ"));
 }
 
 /// Sets the metadata for $file according to $stat

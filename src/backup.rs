@@ -23,10 +23,9 @@ pub mod rsync {
                 host_config,
                 record,
                 sess: None,
-                
             }
         }
-
+        
         /// Returns last_modified_time from metadata in secs (as u64)
         pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, ErrorType> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
@@ -72,14 +71,35 @@ pub mod rsync {
                         self.recurs_update_record(&current_path)?;
                     }
                     else {
-                        self.record.entries.insert(current_path.clone(), self.local_file_mtime(&current_path)?);
+                        let remote_path = self.local_to_remote_path(&current_path)?;
+                        self.record.entries.insert(remote_path, self.local_file_mtime(&current_path)?);
                     }
                 }
             }
 
-            self.record.interval += 1;
-
             Ok(())
+        }
+
+        /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
+        fn local_to_remote_path(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
+            let mut result = PathBuf::from(self.host_config.remote_path.clone());
+            let current_path_components = current_path.components().collect::<Vec<_>>(); // dest_path/identifier/datetime/filestem/...
+
+            // Extracing the common prefix between current_path and self.host_config.dest_path
+            // This is so that it can remove the common prefix from the current_path, and replace
+            // it with self.host_config.remote_path instead
+            let common_path_prefix = current_path.components()
+                .zip(self.host_config.dest_path.components())
+                .take_while(|(a, b)| a == b)
+                .map(|(a, _)| a)
+                .collect::<Vec<_>>();
+
+            let ramaining_components = current_path_components.iter().skip(common_path_prefix.len() + 1);
+            for component in ramaining_components {
+                result.push(component);
+            }
+
+            Ok(result)
         }
     }
 
@@ -95,8 +115,6 @@ pub mod rsync {
             //Formatting dest_path to fit into file structure
             // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
             // Result = dest_path/identifier/remote_dir/ ex.
-            //
-            // $HOME/dest_path/identifier/filestem
             //
             // Adding identifer: $HOME/dest_path/$identifier
             self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
@@ -117,8 +135,8 @@ pub mod rsync {
             let remote_path = self.host_config.remote_path.clone();
             self.copy_remote_directory(&remote_path, &complete_dest_path)?;
             // update records
-            // self.record.entries.clear();
-            // self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
+            self.record.entries.clear();
+            self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
 
             // Ensure "record.json" is put in with the backupped files' root folder
             // ($HOME/dest_path/identifier/record.json)
@@ -227,7 +245,7 @@ pub mod rsync {
         
         /// Copy remote directory to destination.
         /// Will recurse and call copy_remote_file(...) until all contents are copied.
-        fn copy_remote_directory(&mut self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
             // Create destination directory if it doesn't exist
             if !dest_path.exists() {
                 fs::create_dir_all(dest_path).map_err(|err| {
@@ -279,16 +297,15 @@ pub mod rsync {
         }
 
         /// Copy remote file (remote_path) to destination (dest_path).
-        fn copy_remote_file(&mut self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
             // check if the function is used to copying incrementally
             let mode = &self.host_config.incremental.unwrap_or(false);
-            if *mode {
+            if *mode == true {
                 let remote_mtime: &u64 = &self.remote_file_mtime(remote_path)?; 
-                // let local_mtime: &u64 = &self.record.mtime(key)?;
-                // TODO: Add some sort of root path for all local stored path. So all "unique"
-                // files would have a identifier
-                // Also find out more of the fs before staring implemting incremental backup fully.
-                
+                let dest_as_remote = self.local_to_remote_path(dest_path)?;
+                if remote_mtime >= self.record.mtime(&dest_as_remote).unwrap_or(&0) {
+                    return Ok(());
+                }
             }
 
            /*---------------------------------------------------------------------------*
@@ -327,9 +344,6 @@ pub mod rsync {
             // Sets metadata for the newly created file to the same as the remote file.
             let stat = self.remote_filestat(remote_path)?;
             let _ = set_metadata(&mut file, stat);
-
-            // Update recordawdawdawdawdak
-            self.record.entries.insert(remote_path.to_path_buf(), self.local_file_mtime(dest_path)?); 
 
             let m_data = file.metadata();
             println!("{:?}", m_data.unwrap().modified());
