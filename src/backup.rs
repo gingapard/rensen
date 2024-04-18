@@ -58,7 +58,7 @@ pub mod rsync {
 
         /// Returns last_modified_time for a remote file from metadata in secs (as u64)
         fn remote_file_mtime(&self, remote_file: &Path) -> Result<u64, ErrorType> {
-            Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(0))
+            Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(u64::MAX))
         }
 
         fn recurs_update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
@@ -71,21 +71,24 @@ pub mod rsync {
                         self.recurs_update_record(&current_path)?;
                     }
                     else {
-                        let source = self.local_to_remote_path(&current_path)?;
+                        let source = self.local_to_source(&current_path)?;
                         self.record.entries.insert(source, self.local_file_mtime(&current_path)?);
                     }
                 }
             }
 
+            self.record.intervals.push(base_path.to_path_buf());
+            self.record.interval_n += 1;
+
             Ok(())
         }
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
-        fn local_to_remote_path(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
+        fn local_to_source(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
             let mut result = PathBuf::from(self.host_config.source.clone());
             let current_path_components = current_path.components().collect::<Vec<_>>(); // destination/identifier/datetime/filestem/...
 
-            // Extracing the common prefix between current_path and self.host_config.dest_path
+            // Extracting the common prefix between current_path and self.host_config.dest_path
             // This is so that it can remove the common prefix from the current_path, and replace
             // it with self.host_config.remote_path instead
             let common_path_prefix = current_path.components()
@@ -121,9 +124,9 @@ pub mod rsync {
             // Adding current_time: $HOME/destination/$identifier/$current_time
             self.host_config.destination= self.host_config.destination.join(get_datetime());
 
-            // Adding filestem: $HOME/dest_path/identifier/$current_time/$filestem
-            // This is the complete dest_path, where the files will be copied to.
-            // The self.host_config.dest_path is still preserved so that it can
+            // Adding filestem: $HOME/destination/identifier/$current_time/$filestem
+            // This is the complete destination, where the files will be copied to.
+            // The self.host_config.destination is still preserved so that it can
             // be archived and compressed later.
             let complete_destination = if let Some(stem) = &self.host_config.source.file_stem() {
                 self.host_config.destination.join(stem)
@@ -135,8 +138,7 @@ pub mod rsync {
             let source = self.host_config.source.clone();
             self.copy_remote_directory(&source, &complete_destination)?;
             // update records
-            self.record.entries.clear();
-            self.recurs_update_record(&mut self.host_config.source.clone())?;
+            self.recurs_update_record(&mut self.host_config.destination.clone())?;
 
             // Ensure "record.json" is put in with the backupped files' root folder
             // ($HOME/destination/identifier/record.json)
@@ -296,20 +298,21 @@ pub mod rsync {
             Ok(())
         }
 
-        /// Copy remote file (remote_path) to destination (dest_path).
+        /// Copy remote file (source) to destination.
         fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), ErrorType> {
             // check if the function is used to copying incrementally
             let mode = &self.host_config.incremental.unwrap_or(false);
             if *mode == true {
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
-                let dest_as_source = self.local_to_remote_path(destination)?;
-                if remote_mtime >= self.record.mtime(&dest_as_source).unwrap_or(&0) {
+                let dest_as_source = self.local_to_source(destination)?;
+                if remote_mtime <= self.record.mtime(&dest_as_source).unwrap_or(&0) {
+                    println!("not copying");
                     return Ok(());
                 }
             }
 
            /*---------------------------------------------------------------------------*
-            * Staring proceess of copying the file from remote to locally, also ensuring*
+            * Starting proceess of copying the file from remote to locally, also ensuring*
             * metadata and permissons of the the file.                                  *
             *---------------------------------------------------------------------------*/
 

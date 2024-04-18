@@ -30,16 +30,16 @@ fn test_deserialize_record() {
 /// A record storing the data for precompressed files.
 #[derive(Serialize, Deserialize)]
 pub struct Record {
-    pub interval: u8,
-    pub last_interval: String,
+    pub interval_n: u8,
+    pub intervals: Vec<PathBuf>,
     pub entries: HashMap<PathBuf, u64>,
 }
 
 impl Record {
     pub fn new(entries: HashMap<PathBuf, u64>) -> Self {
         Self {
-            interval: 0,
-            last_interval: String::new(),
+            interval_n: 0,
+            intervals: Vec::new(),
             entries,
         }
     }

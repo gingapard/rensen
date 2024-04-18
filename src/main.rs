@@ -22,6 +22,7 @@ fn main() -> Result<()> {
     env_logger::init();
 
     let mut des_hosts = Settings::deserialize_yaml(Path::new("test.yaml"))?;
+    /*
     let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
     entries.insert("/home/bam/backups/file1".into(), 90);
     entries.insert("/home/bam/backups/file2".into(), 1238947);
@@ -31,9 +32,17 @@ fn main() -> Result<()> {
 
     let record = Record::new(entries);
     record.serialize_json(Path::new("record.json")).unwrap();
+    */
+
 
     let mut host_config = &mut des_hosts.hosts[0];
-    let mut host = rsync::Rsync::new(&mut host_config, record);
+    let identifier = match &host_config.identifier {
+        HostIdentifier::Ip(ip) => ip,
+        HostIdentifier::Hostname(hostname) => hostname,
+    };
+
+    let record = Record::deserialize_json(&host_config.destination.join(identifier).join("record.json"));
+    let mut host = rsync::Rsync::new(&mut host_config, record?);
     let _ = host.full_backup();
 
     Ok(())
