@@ -71,8 +71,8 @@ pub mod rsync {
                         self.recurs_update_record(&current_path)?;
                     }
                     else {
-                        let remote_path = self.local_to_remote_path(&current_path)?;
-                        self.record.entries.insert(remote_path, self.local_file_mtime(&current_path)?);
+                        let source = self.local_to_remote_path(&current_path)?;
+                        self.record.entries.insert(source, self.local_file_mtime(&current_path)?);
                     }
                 }
             }
@@ -82,14 +82,14 @@ pub mod rsync {
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
         fn local_to_remote_path(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
-            let mut result = PathBuf::from(self.host_config.remote_path.clone());
-            let current_path_components = current_path.components().collect::<Vec<_>>(); // dest_path/identifier/datetime/filestem/...
+            let mut result = PathBuf::from(self.host_config.source.clone());
+            let current_path_components = current_path.components().collect::<Vec<_>>(); // destination/identifier/datetime/filestem/...
 
             // Extracing the common prefix between current_path and self.host_config.dest_path
             // This is so that it can remove the common prefix from the current_path, and replace
             // it with self.host_config.remote_path instead
             let common_path_prefix = current_path.components()
-                .zip(self.host_config.dest_path.components())
+                .zip(self.host_config.destination.components())
                 .take_while(|(a, b)| a == b)
                 .map(|(a, _)| a)
                 .collect::<Vec<_>>();
@@ -114,38 +114,38 @@ pub mod rsync {
 
             //Formatting dest_path to fit into file structure
             // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
-            // Result = dest_path/identifier/remote_dir/ ex.
+            // Result = destination/identifier/remote_dir/ ex.
             //
-            // Adding identifer: $HOME/dest_path/$identifier
-            self.host_config.dest_path = self.host_config.dest_path.join(&self.host_config.identifier);
-            // Adding current_time: $HOME/dest_path/$identifier/$current_time
-            self.host_config.dest_path = self.host_config.dest_path.join(get_datetime());
+            // Adding identifer: $HOME/destination/$identifier
+            self.host_config.destination = self.host_config.destination.join(&self.host_config.identifier);
+            // Adding current_time: $HOME/destination/$identifier/$current_time
+            self.host_config.destination= self.host_config.destination.join(get_datetime());
 
             // Adding filestem: $HOME/dest_path/identifier/$current_time/$filestem
             // This is the complete dest_path, where the files will be copied to.
             // The self.host_config.dest_path is still preserved so that it can
             // be archived and compressed later.
-            let complete_dest_path = if let Some(stem) = &self.host_config.remote_path.file_stem() {
-                self.host_config.dest_path.join(stem)
+            let complete_destination = if let Some(stem) = &self.host_config.source.file_stem() {
+                self.host_config.destination.join(stem)
             } else {
-                self.host_config.dest_path.join(format!("{}", self.host_config.identifier))  
+                self.host_config.destination.join(format!("{}", self.host_config.identifier))  
             };
 
             // Copy remote path and all of it's content
-            let remote_path = self.host_config.remote_path.clone();
-            self.copy_remote_directory(&remote_path, &complete_dest_path)?;
+            let source = self.host_config.source.clone();
+            self.copy_remote_directory(&source, &complete_destination)?;
             // update records
             self.record.entries.clear();
-            self.recurs_update_record(&mut self.host_config.dest_path.clone())?;
+            self.recurs_update_record(&mut self.host_config.source.clone())?;
 
             // Ensure "record.json" is put in with the backupped files' root folder
-            // ($HOME/dest_path/identifier/record.json)
-            let mut record_path = self.host_config.dest_path.clone();
+            // ($HOME/destination/identifier/record.json)
+            let mut record_path = self.host_config.destination.clone();
             record_path.pop();
 
             let _ = self.record.serialize_json(&record_path.join("record.json"));
-            let _ = archive_compress_dir(&self.host_config.dest_path, 
-                Path::new(format!("{}.tar.gz", &self.host_config.dest_path.to_str().unwrap_or("throw")) .as_str())
+            let _ = archive_compress_dir(&self.host_config.destination, 
+                Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
             );
             
             println!("... copied files");
@@ -245,10 +245,10 @@ pub mod rsync {
         
         /// Copy remote directory to destination.
         /// Will recurse and call copy_remote_file(...) until all contents are copied.
-        fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_directory(&self, source: &Path, destination: &Path) -> Result<(), ErrorType> {
             // Create destination directory if it doesn't exist
-            if !dest_path.exists() {
-                fs::create_dir_all(dest_path).map_err(|err| {
+            if !destination.exists() {
+                fs::create_dir_all(destination).map_err(|err| {
                     log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
                     ErrorType::FS
                 })?;
@@ -259,7 +259,7 @@ pub mod rsync {
                 log_error(ErrorType::Copy, format!("Could not init SFTP: {}", err).as_str());
                 ErrorType::Copy
             })?
-            .readdir(remote_path).map_err(|err| {
+            .readdir(source).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not read remote directory: {}", err).as_str());
                 ErrorType::Copy
             })?;
@@ -276,20 +276,20 @@ pub mod rsync {
                 };
 
                 // format paths
-                let new_remote_path = remote_path.join(entryname);
-                let new_dest_path = dest_path.join(entryname);
+                let new_source = source.join(entryname);
+                let new_destination = destination.join(entryname);
 
                 if stat.is_file() {
-                    self.copy_remote_file(&new_remote_path, &new_dest_path)?;
+                    self.copy_remote_file(&new_source, &new_destination)?;
                 }
                 else if stat.is_dir() {
-                    let dest_subdir_path = dest_path.join(&entryname);
-                    fs::create_dir_all(&dest_subdir_path).map_err(|err| {
+                    let destination_subdir = destination.join(&entryname);
+                    fs::create_dir_all(&destination_subdir).map_err(|err| {
                         log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
                         ErrorType::FS
                     })?;
 
-                    self.copy_remote_directory(&new_remote_path, &new_dest_path)?;
+                    self.copy_remote_directory(&new_source, &new_destination)?;
                 }
             }
            
@@ -297,13 +297,13 @@ pub mod rsync {
         }
 
         /// Copy remote file (remote_path) to destination (dest_path).
-        fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), ErrorType> {
             // check if the function is used to copying incrementally
             let mode = &self.host_config.incremental.unwrap_or(false);
             if *mode == true {
-                let remote_mtime: &u64 = &self.remote_file_mtime(remote_path)?; 
-                let dest_as_remote = self.local_to_remote_path(dest_path)?;
-                if remote_mtime >= self.record.mtime(&dest_as_remote).unwrap_or(&0) {
+                let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
+                let dest_as_source = self.local_to_remote_path(destination)?;
+                if remote_mtime >= self.record.mtime(&dest_as_source).unwrap_or(&0) {
                     return Ok(());
                 }
             }
@@ -313,12 +313,12 @@ pub mod rsync {
             * metadata and permissons of the the file.                                  *
             *---------------------------------------------------------------------------*/
 
-            let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(remote_path).map_err(|err| {
+            let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(source).map_err(|err| {
                 log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
                 ErrorType::Copy
             })?;
 
-            let mut file = fs::File::create(dest_path).map_err(|err| {
+            let mut file = fs::File::create(destination).map_err(|err| {
                 log_error(ErrorType::FS, format!("Could not create file: {}", err).as_str());
                 ErrorType::FS
             })?;
@@ -342,7 +342,7 @@ pub mod rsync {
             }
 
             // Sets metadata for the newly created file to the same as the remote file.
-            let stat = self.remote_filestat(remote_path)?;
+            let stat = self.remote_filestat(source)?;
             let _ = set_metadata(&mut file, stat);
 
             let m_data = file.metadata();

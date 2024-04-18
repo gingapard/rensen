@@ -42,8 +42,8 @@ pub struct HostConfig {
     pub identifier: HostIdentifier, // ip address or domain name
     pub port: Option<u16>, // default: 22
     pub key_path: Option<PathBuf>, // default: "$HOME/.ssh/id_rsa"
-    pub remote_path: PathBuf,
-    pub dest_path: PathBuf,
+    pub source: PathBuf,
+    pub destination: PathBuf,
     pub frequency_hrs: Option<f32>, // default: 24.0
     pub incremental: Option<bool>,
 }
@@ -57,8 +57,8 @@ impl HostConfig {
         identifier: HostIdentifier,
         port: u16,
         key_path: PathBuf,
-        remote_path: PathBuf,
-        dest_path: PathBuf,
+        source: PathBuf,
+        destination: PathBuf,
         frequency_hrs: f32,
         incremental: bool) -> Self {
         Self {
@@ -66,8 +66,8 @@ impl HostConfig {
             identifier,
             port: Some(port),
             key_path: Some(key_path),
-            remote_path,
-            dest_path,
+            source,
+            destination,
             frequency_hrs: Some(frequency_hrs),
             incremental: Some(incremental),
         }
