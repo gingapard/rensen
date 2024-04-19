@@ -14,8 +14,7 @@ pub trait FileSerializable: Sized {
 }
 
 pub trait BackupMethod {
-    fn full_backup(&mut self) -> Result<(), ErrorType>;
-    fn incremental_backup(&mut self) -> Result<(), ErrorType>;
+    fn backup(&mut self) -> Result<(), ErrorType>;
     fn auth(&mut self) -> Result<(), ErrorType>;
     fn connect(&mut self) -> Result<(), ErrorType>;
     fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;

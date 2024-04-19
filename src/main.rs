@@ -43,7 +43,7 @@ fn main() -> Result<()> {
 
     let record = Record::deserialize_json(&host_config.destination.join(identifier).join("record.json"));
     let mut host = rsync::Rsync::new(&mut host_config, record?);
-    let _ = host.full_backup();
+    let _ = host.backup();
 
     Ok(())
 }

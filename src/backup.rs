@@ -15,6 +15,7 @@ pub mod rsync {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
         pub sess: Option<Session>,
+        pub incremental: bool,
     }
 
     impl<'a> Rsync<'a> {
@@ -23,6 +24,7 @@ pub mod rsync {
                 host_config,
                 record,
                 sess: None,
+                incremental: false,
             }
         }
         
@@ -111,18 +113,41 @@ pub mod rsync {
         /// Remote sync backup using ssh/sftp
         /// Default port: 22
         /// Default keypath: "$HOME/.ssh/id_rsa"
-        fn full_backup(&mut self) -> Result<(), ErrorType> {
+        /// Compare last-modified timestamp of files with matching namesm,
+        /// ignoring those with matching timestamp. 
+        /// You take one full backup, and the take incremental backups 
+        /// the next days. Put a setting to take a new *full* backup every week or so.
+        /// Backups older than a specific amount (maybe 30 days) will be deleted.
+        /// 
+        /// ***File structure example***
+        ///
+        /// 192.168.1.220
+        ///     | record.json
+        ///     | 2023-01-11_12-34-56.tar.gz
+        ///         | 'remote_path_stem/'
+        ///     | 2023-01-12_12-34-56.tar.gz
+        ///         | 'remote_path_stem/'
+        ///     | ...tar.gz
+        ///
+        ///
+        /// *record.json*
+        /// 
+        /// path: mtime as u64,
+        /// ...
+        ///
+        ///
+        fn backup(&mut self) -> Result<(), ErrorType> {
             self.connect()?;
             self.auth()?;
 
-            //Formatting dest_path to fit into file structure
+            // Formatting destination to fit into file structure
             // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
             // Result = destination/identifier/remote_dir/ ex.
             //
             // Adding identifer: $HOME/destination/$identifier
             self.host_config.destination = self.host_config.destination.join(&self.host_config.identifier);
             // Adding current_time: $HOME/destination/$identifier/$current_time
-            self.host_config.destination= self.host_config.destination.join(get_datetime());
+            self.host_config.destination = self.host_config.destination.join(get_datetime());
 
             // Adding filestem: $HOME/destination/identifier/$current_time/$filestem
             // This is the complete destination, where the files will be copied to.
@@ -151,36 +176,6 @@ pub mod rsync {
             );
             
             println!("... copied files");
-            Ok(())
-        }
-
-        /// Compare last-modified timestamp of files with matching namesm,
-        /// ignoring those with matching timestamp. 
-        /// You take one full backup, and the take incremental backups 
-        /// the next days. Put a setting to take a new *full* backup every week or so.
-        /// Backups older than a specific amount (maybe 30 days) will be deleted.
-        /// 
-        /// ***File structure example***
-        ///
-        /// 192.168.1.220
-        ///     | record.json
-        ///     | 2023-01-11_12-34-56.tar.gz
-        ///         | 'remote_path_stem/'
-        ///     | 2023-01-12_12-34-56.tar.gz
-        ///         | 'remote_path_stem/'
-        ///     | ...tar.gz
-        ///
-        ///
-        /// *record.json*
-        /// 
-        /// path: mtime as u64,
-        /// ...
-        ///
-        ///
-        fn incremental_backup(&mut self) -> Result<(), ErrorType> {
-            self.connect()?;
-            self.auth()?;
-
             Ok(())
         }
 
@@ -300,10 +295,10 @@ pub mod rsync {
 
         /// Copy remote file (source) to destination.
         fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), ErrorType> {
-            // check if the function is used to copying incrementally
-            let mode = &self.host_config.incremental.unwrap_or(false);
-            if *mode == true {
+            if self.incremental {
+                // check mtime data at local and source
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
+
                 let dest_as_source = self.local_to_source(destination)?;
                 if remote_mtime <= self.record.mtime(&dest_as_source).unwrap_or(&0) {
                     println!("not copying");
