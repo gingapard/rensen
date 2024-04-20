@@ -5,26 +5,28 @@ pub mod rsync {
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
     use std::path::{Path, PathBuf};
-    use crate::traits::{BackupMethod, FileSerializable};
+    use crate::traits::{Rsync, FileSerializable};
     use crate::logging::{log_error, ErrorType};
     use crate::config::*;
     use crate::utils::{archive_compress_dir, set_metadata, get_datetime};
     use crate::record::Record;
 
-    pub struct Rsync<'a> {
+    pub struct Sftp<'a> {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
         pub sess: Option<Session>,
         pub incremental: bool,
+        pub debug: bool,
     }
 
-    impl<'a> Rsync<'a> {
-        pub fn new(host_config: &'a mut HostConfig, record: Record) -> Self {
+    impl<'a> Sftp<'a> {
+        pub fn new(host_config: &'a mut HostConfig, record: Record, debug: bool) -> Self {
             Self {
                 host_config,
                 record,
                 sess: None,
                 incremental: false,
+                debug,
             }
         }
         
@@ -63,7 +65,10 @@ pub mod rsync {
             Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(u64::MAX))
         }
 
-        fn recurs_update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+        pub fn recurs_update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+            let mut to_remove = Vec::new();
+            let mut current_files = Vec::new();
+
             if let Ok(entries) = fs::read_dir(base_path) {
                 for entry in entries {
                     let entry = entry.unwrap();
@@ -71,19 +76,33 @@ pub mod rsync {
 
                     if current_path.is_dir() {
                         self.recurs_update_record(&current_path)?;
-                    }
-                    else {
+                    } else {
                         let source = self.local_to_source(&current_path)?;
-                        self.record.entries.insert(source, self.local_file_mtime(&current_path)?);
+                        self.record.snapshot.add_entry(source.clone(), self.local_file_mtime(&current_path)?);
+                        current_files.push(source);
                     }
                 }
             }
 
-            self.record.intervals.push(base_path.to_path_buf());
+            // With this, it is checking if any of the keys from the record (previous iteration)
+            // Are missing from this iterations. If so, they are sentenced to be removed from
+            // the record to keep track of deleted files.
+            for entry in self.record.snapshot.entries.keys() {
+                if !current_files.contains(entry) {
+                    to_remove.push(entry.clone());
+                }
+            }
+
+            // Removing the entries that got deleted.
+            for entry in to_remove {
+                self.record.snapshot.entries.remove(&entry);
+            }
+
             self.record.interval_n += 1;
 
             Ok(())
         }
+
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
         fn local_to_source(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
@@ -106,9 +125,11 @@ pub mod rsync {
 
             Ok(result)
         }
+
+
     }
 
-    impl BackupMethod for Rsync<'_> {
+    impl Rsync for Sftp<'_> {
 
         /// Remote sync backup using ssh/sftp
         /// Default port: 22
@@ -144,7 +165,7 @@ pub mod rsync {
             // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
             // Result = destination/identifier/remote_dir/ ex.
             //
-            // Adding identifer: $HOME/destination/$identifier
+            // Adding identifier: $HOME/destination/$identifier
             self.host_config.destination = self.host_config.destination.join(&self.host_config.identifier);
             // Adding current_time: $HOME/destination/$identifier/$current_time
             self.host_config.destination = self.host_config.destination.join(get_datetime());
@@ -164,6 +185,7 @@ pub mod rsync {
             self.copy_remote_directory(&source, &complete_destination)?;
             // update records
             self.recurs_update_record(&mut self.host_config.destination.clone())?;
+            self.record.intervals.push(complete_destination.to_path_buf());
 
             // Ensure "record.json" is put in with the backupped files' root folder
             // ($HOME/destination/identifier/record.json)
@@ -300,7 +322,7 @@ pub mod rsync {
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
 
                 let dest_as_source = self.local_to_source(destination)?;
-                if remote_mtime <= self.record.mtime(&dest_as_source).unwrap_or(&0) {
+                if remote_mtime <= self.record.snapshot.mtime(&dest_as_source).unwrap_or(&0) {
                     println!("not copying");
                     return Ok(());
                 }
@@ -349,6 +371,6 @@ pub mod rsync {
             Ok(())
         }
     }
-}
 
-pub mod service_message_block {}
+    pub struct Samba {}
+}

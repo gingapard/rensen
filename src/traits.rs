@@ -13,7 +13,7 @@ pub trait FileSerializable: Sized {
     fn deserialize_yaml(file_path: &Path) -> std::io::Result<Self>;
 }
 
-pub trait BackupMethod {
+pub trait Rsync {
     fn backup(&mut self) -> Result<(), ErrorType>;
     fn auth(&mut self) -> Result<(), ErrorType>;
     fn connect(&mut self) -> Result<(), ErrorType>;

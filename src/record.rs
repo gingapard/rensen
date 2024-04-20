@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::io::{self, prelude::*};
 use std::collections::HashMap;
 use crate::traits::FileSerializable;
+use crate::snapshot::Snapshot;
 
 #[cfg(test)]
 #[test]
@@ -15,14 +16,13 @@ fn test_serialize_record() {
     entries.insert("/home/bam/backups/file4".into(), 2398129837);
     entries.insert("/home/bam/backups/file5".into(), 9812837123);
 
-    let record = Record::new(entries);
+    let record = Record::new();
     record.serialize_json(Path::new("record.json")).unwrap();
 }
 
 #[test]
 fn test_deserialize_record() {
     let record: Record = Record::deserialize_json(Path::new("tests/record.json")).unwrap();
-    println!("{:?}", record.entries);
 }
 
 /* listened to "Plastic Love" while coding this. */
@@ -32,22 +32,15 @@ fn test_deserialize_record() {
 pub struct Record {
     pub interval_n: u8,
     pub intervals: Vec<PathBuf>,
-    pub entries: HashMap<PathBuf, u64>,
+    pub snapshot: Snapshot,
 }
 
 impl Record {
-    pub fn new(entries: HashMap<PathBuf, u64>) -> Self {
-        Self {
+    pub fn new() -> Self {
+        Record {
             interval_n: 0,
             intervals: Vec::new(),
-            entries,
-        }
-    }
-
-    pub fn mtime(&self, file_path: &Path) -> Option<&u64> {
-        match self.entries.contains_key(file_path) {
-            true => Some(self.entries.get(file_path)?),
-            _ => None
+            snapshot: Snapshot::new(),
         }
     }
 }

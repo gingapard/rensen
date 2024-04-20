@@ -6,16 +6,17 @@ pub mod backup;
 pub mod config;
 pub mod tests;
 pub mod traits;
-pub use traits::{BackupMethod, FileSerializable};
+pub mod snapshot;
+pub use traits::{Rsync, FileSerializable};
 
-use backup::rsync;
+use backup::rsync::*;
 
 use config::*;
 use logging::ErrorType;
 
 use record::Record;
 use std::{env, net, io::Result, path::{Path, PathBuf}, error};
-use std::collections::HashMap;
+// use std::collections::HashMap;
 use env_logger;
 
 fn main() -> Result<()> {
@@ -42,7 +43,7 @@ fn main() -> Result<()> {
     };
 
     let record = Record::deserialize_json(&host_config.destination.join(identifier).join("record.json"));
-    let mut host = rsync::Rsync::new(&mut host_config, record?);
+    let mut host = Sftp::new(&mut host_config, record?, false);
     let _ = host.backup();
 
     Ok(())
