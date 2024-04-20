@@ -65,7 +65,7 @@ pub mod rsync {
             Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(u64::MAX))
         }
 
-        pub fn recurs_update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+        pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
             let mut to_remove = Vec::new();
             let mut current_files = Vec::new();
 
@@ -75,10 +75,10 @@ pub mod rsync {
                     let current_path = entry.path();
 
                     if current_path.is_dir() {
-                        self.recurs_update_record(&current_path)?;
+                        self.update_record(&current_path)?;
                     } else {
                         let source = self.local_to_source(&current_path)?;
-                        self.record.snapshot.add_entry(source.clone(), self.local_file_mtime(&current_path)?);
+                        self.record.snapshot.add_entry(source.clone(), current_path.clone(), self.local_file_mtime(&current_path)?);
                         current_files.push(source);
                     }
                 }
@@ -102,7 +102,6 @@ pub mod rsync {
 
             Ok(())
         }
-
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
         fn local_to_source(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
@@ -184,7 +183,7 @@ pub mod rsync {
             let source = self.host_config.source.clone();
             self.copy_remote_directory(&source, &complete_destination)?;
             // update records
-            self.recurs_update_record(&mut self.host_config.destination.clone())?;
+            self.update_record(&mut self.host_config.destination.clone())?;
             self.record.intervals.push(complete_destination.to_path_buf());
 
             // Ensure "record.json" is put in with the backupped files' root folder
@@ -192,7 +191,7 @@ pub mod rsync {
             let mut record_path = self.host_config.destination.clone();
             record_path.pop();
 
-            let _ = self.record.serialize_json(&record_path.join("record.json"));
+            let _ = self.record.serialize_json(&record_path.join(".record.json"));
             let _ = archive_compress_dir(&self.host_config.destination, 
                 Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
             );
@@ -212,7 +211,7 @@ pub mod rsync {
             println!("identifier: {:?}", self.host_config.identifier);
 
             // Authenticate session (private key --> public key)
-           match self.sess.as_ref() {
+            match self.sess.as_ref() {
                 Some(session) => {
                     if let Err(err) = session.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None) {
                         log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());

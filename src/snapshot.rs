@@ -1,10 +1,19 @@
 use std::collections::{HashMap, HashSet};
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 
+/// Wrapper for PathBuf holding its mtime as u64
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PathBufx {
+    pub path: PathBuf,
+    pub mtime: u64,
+}
+
+/// Entries containing the mtime of files.
+/// Using the source path as key, we can get data.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Snapshot {
-    pub entries: HashMap<PathBuf, u64>,
+    pub entries: HashMap<PathBuf, PathBufx>,
     pub deleted_entries: HashSet<PathBuf>
 }
 
@@ -16,8 +25,8 @@ impl Snapshot {
         }
     }
 
-    pub fn add_entry(&mut self, path: PathBuf, last_modified: u64) {
-        self.entries.insert(path, last_modified);
+    pub fn add_entry(&mut self, path: PathBuf, local_path: PathBuf, mtime: u64) {
+        self.entries.insert(path, PathBufx {path: local_path, mtime});
     }
 
     pub fn mark_as_deleted(&mut self, path: PathBuf) {
@@ -29,6 +38,6 @@ impl Snapshot {
     }
 
     pub fn mtime(&self, path: &PathBuf) -> Option<&u64> {
-        self.entries.get(path)
+        Some(&self.entries.get(path).unwrap().mtime)
     }
 }
