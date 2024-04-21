@@ -37,6 +37,10 @@ impl Snapshot {
         self.deleted_entries.contains(path)
     }
 
+    pub fn undelete(&mut self, path: &PathBuf) {
+        self.deleted_entries.remove(path);
+    }
+
     pub fn mtime(&self, path: &PathBuf) -> Option<&u64> {
         Some(&self.entries.get(path).unwrap().mtime)
     }

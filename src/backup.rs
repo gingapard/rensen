@@ -78,6 +78,13 @@ pub mod rsync {
                         self.update_record(&current_path)?;
                     } else {
                         let source = self.local_to_source(&current_path)?;
+                        // Because deleted files are added to the deleted vector when they are
+                        // deleted, it is checking if it got re-added, and can therefore be removed
+                        // from deleted_entries
+                        if self.record.snapshot.is_deleted(&source) {
+                            self.record.snapshot.undelete(&source);
+                        }
+                        //                          ---source       ---local_path         ---mtime 
                         self.record.snapshot.add_entry(source.clone(), current_path.clone(), self.local_file_mtime(&current_path)?);
                         current_files.push(source);
                     }
