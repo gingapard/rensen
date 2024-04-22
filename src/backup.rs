@@ -10,6 +10,7 @@ pub mod rsync {
     use crate::config::*;
     use crate::utils::{archive_compress_dir, set_metadata, get_datetime};
     use crate::record::Record;
+    use crate::snapshot::PathPair;
 
     pub struct Sftp<'a> {
         pub host_config: &'a mut HostConfig,
@@ -66,8 +67,8 @@ pub mod rsync {
         }
 
         pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
-            let mut to_remove = Vec::new();
-            let mut current_files = Vec::new();
+            let mut to_remove: Vec<PathPair> = Vec::new();
+            let mut current_files: Vec<PathPair>  = Vec::new();
 
             if let Ok(entries) = fs::read_dir(base_path) {
                 for entry in entries {
@@ -76,17 +77,22 @@ pub mod rsync {
 
                     if current_path.is_dir() {
                         self.update_record(&current_path)?;
+                        return Ok(())
                     } else {
                         let source = self.local_to_source(&current_path)?;
                         // Because deleted files are added to the deleted vector when they are
                         // deleted, it is checking if it got re-added, and can therefore be removed
                         // from deleted_entries
+
+                        /*
                         if self.record.snapshot.is_deleted(&source) {
                             self.record.snapshot.undelete(&source);
                         }
+                        */
+
                         //                          ---source       ---local_path         ---mtime 
                         self.record.snapshot.add_entry(source.clone(), current_path.clone(), self.local_file_mtime(&current_path)?);
-                        current_files.push(source);
+                        current_files.push(PathPair::from(source, current_path));
                     }
                 }
             }
@@ -94,18 +100,31 @@ pub mod rsync {
             // With this, it is checking if any of the keys from the record (previous iteration)
             // Are missing from this iterations. If so, they are sentenced to be removed from
             // the record to keep track of deleted files.
+            
+            println!("Current files: {:?}", current_files);
+            let sources: Vec<PathBuf> = current_files.iter().map(|pair| pair.source.clone()).collect();
             for entry in self.record.snapshot.entries.keys() {
-                if !current_files.contains(entry) {
-                    to_remove.push(entry.clone());
+                let mut found = false;
+                for source in sources.iter() {
+                    if entry == source {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if !found {
+                    if let Some(pair) = current_files.iter().find(|pair| pair.source == *entry) {
+                        // TODO: Left off...!!!
+                        // push pair to "to_remove" vector
+                    }
                 }
             }
 
             // Removing the entries that got deleted.
+            println!("To remove: {:?}", to_remove);
             for entry in to_remove {
-                self.record.snapshot.entries.remove(&entry);
+                self.record.snapshot.mark_as_deleted(entry);
             }
-
-            self.record.interval_n += 1;
 
             Ok(())
         }
@@ -191,7 +210,8 @@ pub mod rsync {
             self.copy_remote_directory(&source, &complete_destination)?;
             // update records
             self.update_record(&mut self.host_config.destination.clone())?;
-            self.record.intervals.push(complete_destination.to_path_buf());
+            /* self.record.intervals.push(complete_destination.to_path_buf()); */
+            println!("{}", self.record);
 
             // Ensure "record.json" is put in with the backupped files' root folder
             // ($HOME/destination/identifier/record.json)

@@ -1,22 +1,22 @@
-use serde::{Serialize, Deserialize};
-use std::fs::File;
+use serde::{Serialize, Deserialize}; use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::{self, prelude::*};
-use std::collections::HashMap;
 use crate::traits::FileSerializable;
-use crate::snapshot::Snapshot;
+use std::fmt::{Display, Formatter, Result};
+use crate::snapshot::*;
 
 #[cfg(test)]
 #[test]
 fn test_serialize_record() {
-    let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
-    entries.insert("/home/bam/backups/file1".into(), 90);
-    entries.insert("/home/bam/backups/file2".into(), 1238947);
-    entries.insert("/home/bam/backups/file3".into(), 239847298);
-    entries.insert("/home/bam/backups/file4".into(), 2398129837);
-    entries.insert("/home/bam/backups/file5".into(), 9812837123);
+    /*
+    let mut entries: HashMap<PathBuf, PathBufx> = HashMap::new();  
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file1"), 123897));
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file2"), 123897));
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file3"), 123897));
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file4"), 123897));
+    */
 
-    let record = Record::new();
+    let mut record = Record::new();
     record.serialize_json(Path::new("record.json")).unwrap();
 }
 
@@ -28,12 +28,13 @@ fn test_deserialize_record() {
 /* listened to "Plastic Love" while coding this. */
 
 /// A record storing the data for precompressed files.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
     pub interval_n: u8,
     pub intervals: Vec<PathBuf>,
     pub snapshot: Snapshot,
 }
+
 
 impl Record {
     pub fn new() -> Self {
@@ -42,6 +43,12 @@ impl Record {
             intervals: Vec::new(),
             snapshot: Snapshot::new(),
         }
+    }
+}
+
+impl Display for Record {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "Record {{\n   interval_n: {},\n   intervals: {:?},\n  snapshot: {}\n}}", self.interval_n, self.intervals, self.snapshot)
     }
 }
 

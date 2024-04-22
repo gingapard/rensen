@@ -1,10 +1,19 @@
 ---
-- user: cbroo 
+- user: user
   identifier:
-    Ip: 192.168.1.47
+    Ip: 192.168.1.0/24
   port: 22
-  key_path: /home/bam/.ssh/oorbc
-  source: /home/cbroo/secs
-  destination: /home/bam/backups
+  key_path: ~/.ssh/testkey
+  source: remote/path
+  destination: dest/path
   frequency_hrs: 24.0
-  incremental: false
+  always_full: false
+- user: user2
+  identifier:
+    Ip: 192.168.1.0/24
+  port: 22
+  key_path: ~/.ssh/testkey
+  source: remote/path
+  destination: dest/path
+  frequency_hrs: 24.0
+  always_full: false
