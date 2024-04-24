@@ -114,8 +114,7 @@ pub mod rsync {
 
                 if !found {
                     if let Some(pair) = current_files.iter().find(|pair| pair.source == *entry) {
-                        // TODO: Left off...!!!
-                        // push pair to "to_remove" vector
+                        to_remove.push(pair.clone());
                     }
                 }
             }

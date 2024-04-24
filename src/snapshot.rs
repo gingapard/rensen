@@ -28,7 +28,7 @@ impl PathBufx {
 }
 
 /// Containg two pairing (equal) paths
-#[derive(Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct PathPair {
     pub source: PathBuf,
     pub destination: PathBuf,
