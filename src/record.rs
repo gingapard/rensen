@@ -62,7 +62,13 @@ impl FileSerializable for Record {
     }
 
     fn deserialize_json(file_path: &Path) -> std::io::Result<Self> {
-        let mut file = File::open(file_path)?;
+        let mut file = match File::open(file_path) {
+            Ok(v) => v,
+            Err(_) => {
+                return Ok(Record::new());
+            },
+        };
+
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let record: Record = serde_json::from_str(&contents)?;
