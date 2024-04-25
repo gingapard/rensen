@@ -47,6 +47,5 @@ fn main() -> Result<()> {
     let mut host = Sftp::new(&mut host_config, record.unwrap(), false);
     println!("backupping2...");
     let _ = host.backup();
-
     Ok(())
 }

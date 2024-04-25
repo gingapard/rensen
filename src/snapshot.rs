@@ -65,8 +65,8 @@ impl Snapshot {
         }
     }
 
-    pub fn add_entry(&mut self, path: PathBuf, local_path: PathBuf, mtime: u64) {
-        self.entries.insert(path, PathBufx::from(local_path, mtime));
+    pub fn add_entry(&mut self, pathpair: PathPair, mtime: u64) {
+        self.entries.insert(pathpair.source, PathBufx::from(pathpair.destination, mtime));
     }
 
     pub fn mark_as_deleted(&mut self, pair: PathPair) {
