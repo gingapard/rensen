@@ -43,9 +43,8 @@ fn main() -> Result<()> {
     };
 
     let record = Record::deserialize_json(&host_config.destination.join(identifier).join(".record.json"));
-    println!("backupping1...");
     let mut host = Sftp::new(&mut host_config, record.unwrap(), false);
-    println!("backupping2...");
+    host.incremental = true;
     let _ = host.backup();
     Ok(())
 }

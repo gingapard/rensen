@@ -90,6 +90,11 @@ fn add_dir_contents_to_tar(
 
 #[cfg(test)]
 #[test]
+fn test_compress_archive() {
+
+}
+
+#[test]
 fn test_hash() {
     let path = Path::new("src/hosts");
     match hash_file(path, 0) {
@@ -97,7 +102,6 @@ fn test_hash() {
         Err(err) => panic!("Error: {:?}", err),
     }
 }
-
 /// Read the next 1024 bytes from the 'pos'-th byte.
 pub fn hash_file(path: &Path, pos: u64) -> Result<String, ErrorType> {
     let mut file = File::open(path).map_err(|err| {

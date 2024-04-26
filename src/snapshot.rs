@@ -53,7 +53,7 @@ pub struct Snapshot {
 
 impl Display for Snapshot {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "Snapshot: {{\n    entries: {:?},\n   deleted_entries: {:?}\n}}", self.entries, self.deleted_entries)
+        write!(f, "Snapshot: {{\n\tentries: {:?},\n\tdeleted_entries: {:?}\n}}", self.entries, self.deleted_entries)
     }
 }
 
@@ -83,7 +83,11 @@ impl Snapshot {
     }
 
     pub fn mtime(&self, path: &PathBuf) -> Option<&u64> {
-        Some(&self.entries.get(path).unwrap().mtime)
+        if let Some(entry) = &self.entries.get(path) {
+            return Some(&entry.mtime)
+        }
+
+        None
     }
 }
 

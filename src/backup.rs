@@ -68,7 +68,7 @@ pub mod rsync {
 
         pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
             let mut to_remove: Vec<PathPair> = Vec::new();
-            let mut current_files: Vec<PathPair>  = Vec::new();
+            let mut current_files: Vec<PathPair> = Vec::new();
 
             if let Ok(entries) = fs::read_dir(base_path) {
                 for entry in entries {
@@ -77,10 +77,11 @@ pub mod rsync {
 
                     if current_path.is_dir() {
                         self.update_record(&current_path)?;
-                        return Ok(())
                     } else {
                         let source = self.local_to_source(&current_path)?;
                         let mtime = self.local_file_mtime(&current_path)?;
+                        println!("mtime: {}", mtime);
+
                         let pathpair = PathPair::from(source, current_path);
 
                         // Because deleted files are added to the deleted vector when they are
@@ -113,6 +114,7 @@ pub mod rsync {
 
                 if !found {
                     if let Some(pair) = current_files.iter().find(|pair| pair.source == *entry) {
+                        println!("Deleted: {:?}", pair);
                         to_remove.push(pair.clone());
                     }
                 }
