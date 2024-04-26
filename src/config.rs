@@ -52,7 +52,8 @@ impl HostConfig {
     /// Constructor method for HostConfig not actually
     /// a part of the program, but just for generating 
     /// the config file in unit tests.
-    pub fn new(
+
+    pub fn from(
         user: String,
         identifier: HostIdentifier,
         port: u16,
@@ -72,6 +73,7 @@ impl HostConfig {
             always_full: Some(always_full),
         }
     }
+
 }
 
 pub struct Settings {
