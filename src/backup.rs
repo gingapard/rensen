@@ -218,7 +218,11 @@ pub mod rsync {
             let mut record_path = self.host_config.destination.clone();
             record_path.pop();
 
+            // adding .record.json record to root dir as wall as to the root of 
+            // the backupped files xxx/destination/../.record.json
             let _ = self.record.serialize_json(&record_path.join(".record.json"));
+            let _ = self.record.serialize_json(&self.host_config.destination.join(".record.json"));
+                
             let _ = archive_compress_dir(&self.host_config.destination, 
                 Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
             );

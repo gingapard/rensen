@@ -48,7 +48,7 @@ impl Record {
 
 impl Display for Record {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "Record {{\n   interval_n: {},\n   intervals: {:?},\n  snapshot: {}\n}}", self.interval_n, self.intervals, self.snapshot)
+        write!(f, "Record {{\n\tinterval_n: {},\n\tintervals: {:?},\n\tsnapshot: {}\n\t}}", self.interval_n, self.intervals, self.snapshot)
     }
 }
 
