@@ -42,7 +42,7 @@ fn main() -> Result<()> {
         HostIdentifier::Hostname(hostname) => hostname,
     };
 
-    let record = Record::deserialize_json(&host_config.destination.join(identifier).join(".record.json"));
+    let record = Record::deserialize_json(&host_config.destination.join(identifier).join(".outer.json"));
     let mut host = Sftp::new(&mut host_config, record.unwrap(), false);
     host.incremental = true;
     let _ = host.backup();

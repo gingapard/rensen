@@ -186,14 +186,16 @@ pub mod rsync {
             self.connect()?;
             self.auth()?;
 
+            let datetime = get_datetime();
+
             // Formatting destination to fit into file structure
             // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
             // Result = destination/identifier/remote_dir/ ex.
             //
-            // Adding identifier: $HOME/destination/$identifier
-            self.host_config.destination = self.host_config.destination.join(&self.host_config.identifier);
-            // Adding current_time: $HOME/destination/$identifier/$current_time
-            self.host_config.destination = self.host_config.destination.join(get_datetime());
+            // Adding identifier: $HOME/destination/$identifier/$datetime
+            self.host_config.destination = self.host_config.destination
+                .join(&self.host_config.identifier)
+                .join(datetime);
 
             // Adding filestem: $HOME/destination/identifier/$current_time/$filestem
             // This is the complete destination, where the files will be copied to.
@@ -205,23 +207,20 @@ pub mod rsync {
                 self.host_config.destination.join(format!("{}", self.host_config.identifier))  
             };
 
-            // Copy remote path and all of it's content
             let source = self.host_config.source.clone();
             self.copy_remote_directory(&source, &complete_destination)?;
-            // update records
             self.update_record(&mut self.host_config.destination.clone())?;
             /* self.record.intervals.push(complete_destination.to_path_buf()); */
             println!("{}", self.record);
 
-            // Ensure "record.json" is put in with the backupped files' root folder
-            // ($HOME/destination/identifier/record.json)
             let mut record_path = self.host_config.destination.clone();
-            record_path.pop();
 
-            // adding .record.json record to root dir as wall as to the root of 
-            // the backupped files xxx/destination/../.record.json
-            let _ = self.record.serialize_json(&record_path.join(".record.json"));
-            let _ = self.record.serialize_json(&self.host_config.destination.join(".record.json"));
+            // inner
+            let _ = self.record.serialize_json(&record_path.join(".inner.json"));
+
+            // outer
+            record_path.pop();
+            let _ = self.record.serialize_json(&record_path.join(".outer.json"));
                 
             let _ = archive_compress_dir(&self.host_config.destination, 
                 Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
