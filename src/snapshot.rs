@@ -82,9 +82,17 @@ impl Snapshot {
         self.deleted_entries.remove(pair);
     }
 
-    pub fn mtime(&self, path: &PathBuf) -> Option<&u64> {
-        if let Some(entry) = &self.entries.get(path) {
+    pub fn mtime(&self, key: &PathBuf) -> Option<&u64> {
+        if let Some(entry) = &self.entries.get(key) {
             return Some(&entry.mtime)
+        }
+
+        None
+    }
+
+    pub fn path(&self, key: &PathBuf) -> Option<&PathBuf> {
+        if let Some(entry) = &self.entries.get(key) {
+            return Some(&entry.path);
         }
 
         None

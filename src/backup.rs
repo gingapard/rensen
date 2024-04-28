@@ -66,9 +66,29 @@ pub mod rsync {
             Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(u64::MAX))
         }
 
-        pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
-            let mut to_remove: Vec<PathPair> = Vec::new();
-            let mut current_files: Vec<PathPair> = Vec::new();
+        /// Iterating the keys in entries and checking if they are remotly
+        /// accessable still. If not, they are assumed to be deleted from the source,
+        /// and therefore marked as deleted.
+        fn update_deleted_entries(&mut self) -> Result<(), ErrorType> {
+            let keys: Vec<_> = self.record.snapshot.entries.keys().cloned().collect();
+
+            for entry in keys {
+                if self.remote_file_mtime(&entry)? == u64::MAX {
+                    let pair = PathPair::from(
+                        entry.to_path_buf(),
+                        self.record.snapshot.path(&entry)
+                            .unwrap()
+                            .to_path_buf()
+                    );
+
+                    self.record.snapshot.mark_as_deleted(pair);
+                }
+            }
+
+            Ok(())
+        }
+
+        pub fn update_entries(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
 
             if let Ok(entries) = fs::read_dir(base_path) {
                 for entry in entries {
@@ -78,54 +98,29 @@ pub mod rsync {
                     if current_path.is_dir() {
                         self.update_record(&current_path)?;
                     } else {
+
                         let source = self.local_to_source(&current_path)?;
                         let mtime = self.local_file_mtime(&current_path)?;
-                        println!("mtime: {}", mtime);
-
                         let pathpair = PathPair::from(source, current_path);
 
-                        // Because deleted files are added to the deleted vector when they are
-                        // deleted, it is checking if it got re-added, and can therefore be removed
-                        // from deleted_entries
+                        // If the pathpair is already marked as deleted from a previous backup
+                        // (it got readded), will unmark it as deleted. Not checking mtime here
+                        // as it is not relevant.
                         if self.record.snapshot.is_deleted(&pathpair) {
                             self.record.snapshot.undelete(&pathpair);
                         }
 
                         self.record.snapshot.add_entry(pathpair.clone(), mtime);
-                        current_files.push(pathpair);
                     }
                 }
             }
 
-            // With this, it is checking if any of the keys from the record (previous iteration)
-            // Are missing from this iterations. If so, they are sentenced to be removed from
-            // the record to keep track of deleted files.
-            
-            println!("Current files: {:?}", current_files);
-            let sources: Vec<PathBuf> = current_files.iter().map(|pair| pair.source.clone()).collect();
-            for entry in self.record.snapshot.entries.keys() {
-                let mut found = false;
-                for source in sources.iter() {
-                    if entry == source {
-                        found = true;
-                        break;
-                    }
-                }
+            Ok(())
+        }
 
-                if !found {
-                    if let Some(pair) = current_files.iter().find(|pair| pair.source == *entry) {
-                        println!("Deleted: {:?}", pair);
-                        to_remove.push(pair.clone());
-                    }
-                }
-            }
-
-            // Removing the entries that got deleted.
-            println!("To remove: {:?}", to_remove);
-            for entry in to_remove {
-                self.record.snapshot.mark_as_deleted(entry);
-            }
-
+        pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+            let _ = self.update_entries(base_path)?;
+            let _ = self.update_deleted_entries()?;
             Ok(())
         }
 
