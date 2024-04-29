@@ -30,7 +30,13 @@ pub mod rsync {
                 debug,
             }
         }
-        
+
+        pub fn debug(&self, s: &str) {
+            if self.debug {
+                println!("{}", s);
+            }
+        }
+
         /// Returns last_modified_time from metadata in secs (as u64)
         pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, ErrorType> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
@@ -89,10 +95,13 @@ pub mod rsync {
         }
 
         pub fn update_entries(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
-
             if let Ok(entries) = fs::read_dir(base_path) {
                 for entry in entries {
-                    let entry = entry.unwrap();
+                    let entry = match entry {
+                        Ok(v) => v,
+                        Err(_) => continue,
+                    };
+
                     let current_path = entry.path();
 
                     if current_path.is_dir() {
@@ -136,7 +145,8 @@ pub mod rsync {
                 .zip(self.host_config.destination.components())
                 .take_while(|(a, b)| a == b)
                 .map(|(a, _)| a)
-                .collect::<Vec<_>>();
+                .collect::<Vec<_>>()
+            ;
 
             let ramaining_components = current_path_components.iter().skip(common_path_prefix.len() + 1);
             for component in ramaining_components {
@@ -145,8 +155,6 @@ pub mod rsync {
 
             Ok(result)
         }
-
-
     }
 
     impl Rsync for Sftp<'_> {
@@ -178,8 +186,14 @@ pub mod rsync {
         ///
         ///
         fn backup(&mut self) -> Result<(), ErrorType> {
+
+            self.debug("... connecting");
             self.connect()?;
+            self.debug("successs!");
+
+            self.debug("... authenticating");
             self.auth()?;
+            self.debug("successs!");
 
             let datetime = get_datetime();
 
@@ -192,6 +206,8 @@ pub mod rsync {
                 .join(&self.host_config.identifier)
                 .join(datetime);
 
+            let source = self.host_config.source.clone();
+
             // Adding filestem: $HOME/destination/identifier/$current_time/$filestem
             // This is the complete destination, where the files will be copied to.
             // The self.host_config.destination is still preserved so that it can
@@ -202,11 +218,13 @@ pub mod rsync {
                 self.host_config.destination.join(format!("{}", self.host_config.identifier))  
             };
 
-            let source = self.host_config.source.clone();
+            self.debug("... copying files");
             self.copy_remote_directory(&source, &complete_destination)?;
+            self.debug("... successs!");
+
+            self.debug("... updating records");
             self.update_record(&mut self.host_config.destination.clone())?;
-            /* self.record.intervals.push(complete_destination.to_path_buf()); */
-            println!("{}", self.record);
+            self.debug("... successs!");
 
             let mut record_path = self.host_config.destination.clone();
 
@@ -217,20 +235,26 @@ pub mod rsync {
             record_path.pop();
             let _ = self.record.serialize_json(&record_path.join(".outer.json"));
                 
+            // compressing the ../$destination/$identifer/$datetime(parent of complete_destination)
+            self.debug("... compressing");
             let _ = archive_compress_dir(&self.host_config.destination, 
                 Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
             );
-            
-            println!("... copied files");
+            self.debug("... successs!");
+
             Ok(())
         }
 
         fn auth(&mut self) -> Result<(), ErrorType> {
+
             // key path
-            let private_key_path = Path::new(self.host_config.key_path.as_ref()
-                .map_or("$HOME/.ssh/id_rsa", |s| s.to_str().unwrap_or("/home/$HOME/.ssh/id_rsa"))
-            );
-        
+            let default_key_path = "$HOME/.ssh/ed25519";
+            let key_path = self.host_config.key_path.as_ref()
+                .map(|s| s.to_str().unwrap_or(default_key_path))
+                .unwrap_or(default_key_path);
+
+            let private_key_path = Path::new(&key_path);
+
             println!("key_path: {:?}", private_key_path);
             println!("user: {}", self.host_config.user);
             println!("identifier: {:?}", self.host_config.identifier);
@@ -248,8 +272,6 @@ pub mod rsync {
                     return Err(ErrorType::Auth);
                 }
             }
-
-            println!("... auth");
 
             Ok(())
         }

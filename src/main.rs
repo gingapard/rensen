@@ -2,9 +2,7 @@ pub mod record;
 pub mod logging;
 pub mod utils;
 pub use utils::hash_file;
-pub mod backup;
-pub mod config;
-pub mod tests;
+pub mod backup; pub mod config; pub mod tests;
 pub mod traits;
 pub mod snapshot;
 pub use traits::{Rsync, FileSerializable};
@@ -45,6 +43,7 @@ fn main() -> Result<()> {
     let record = Record::deserialize_json(&host_config.destination.join(identifier).join(".outer.json"));
     let mut host = Sftp::new(&mut host_config, record.unwrap(), false);
     host.incremental = true;
+    host.debug = true;
     let _ = host.backup();
     Ok(())
 }
