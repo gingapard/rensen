@@ -6,7 +6,7 @@ pub mod rsync {
     use std::time::SystemTime;
     use std::path::{Path, PathBuf};
     use crate::traits::{Rsync, FileSerializable};
-    use crate::logging::{log_error, ErrorType};
+    use crate::logging::{log_trap, Trap};
     use crate::config::*;
     use crate::utils::{archive_compress_dir, set_metadata, get_datetime};
     use crate::record::Record;
@@ -38,48 +38,48 @@ pub mod rsync {
         }
 
         /// Returns last_modified_time from metadata in secs (as u64)
-        pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, ErrorType> {
+        pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, Trap> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not get metadata of local file: {}", err).as_str());
-                ErrorType::FS
+                log_trap(Trap::FS, format!("Could not get metadata of local file: {}", err).as_str());
+                Trap::FS
             })?;
 
             let local_modified = local_metadata.modified().map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not get mod time of local file: {}", err).as_str());
-                ErrorType::FS
+                log_trap(Trap::FS, format!("Could not get mod time of local file: {}", err).as_str());
+                Trap::FS
             })?;
 
             Ok(local_modified.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())
         }
 
         /// Wrapper for SFTP::stat
-        pub fn remote_filestat(&self, remote_file: &Path) -> Result<FileStat, ErrorType> {
-            let sftp = self.sess.as_ref().ok_or(ErrorType::FS)?.sftp().map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not init SFTP session: {}", err).as_str());
-                ErrorType::FS
+        pub fn remote_filestat(&self, remote_file: &Path) -> Result<FileStat, Trap> {
+            let sftp = self.sess.as_ref().ok_or(Trap::FS)?.sftp().map_err(|err| {
+                log_trap(Trap::FS, format!("Could not init SFTP session: {}", err).as_str());
+                Trap::FS
             })?;
 
             let stat = sftp.stat(remote_file).map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not get metadata of remote file: {}", err).as_str());
-                ErrorType::FS
+                log_trap(Trap::FS, format!("Could not get metadata of remote file: {}", err).as_str());
+                Trap::FS
             })?;
 
             Ok(stat)
         }
 
         /// Returns last_modified_time for a remote file from metadata in secs (as u64)
-        fn remote_file_mtime(&self, remote_file: &Path) -> Result<u64, ErrorType> {
+        fn remote_file_mtime(&self, remote_file: &Path) -> Result<u64, Trap> {
             Ok(self.remote_filestat(remote_file)?.mtime.unwrap_or(u64::MAX))
         }
 
         /// Iterating the keys in entries and checking if they are remotly
         /// accessable still. If not, they are assumed to be deleted from the source,
         /// and therefore marked as deleted.
-        fn update_deleted_entries(&mut self) -> Result<(), ErrorType> {
+        fn update_deleted_entries(&mut self) -> Result<(), Trap> {
             let keys: Vec<_> = self.record.snapshot.entries.keys().cloned().collect();
 
             for entry in keys {
-                if self.remote_file_mtime(&entry)? == u64::MAX {
+                if let Err(_) = self.remote_file_mtime(&entry) {
                     let pair = PathPair::from(
                         entry.to_path_buf(),
                         self.record.snapshot.path(&entry)
@@ -94,7 +94,7 @@ pub mod rsync {
             Ok(())
         }
 
-        pub fn update_entries(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+        pub fn update_entries(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
             if let Ok(entries) = fs::read_dir(base_path) {
                 for entry in entries {
                     let entry = match entry {
@@ -127,14 +127,14 @@ pub mod rsync {
             Ok(())
         }
 
-        pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), ErrorType> {
+        pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
             let _ = self.update_entries(base_path)?;
             let _ = self.update_deleted_entries()?;
             Ok(())
         }
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
-        fn local_to_source(&self, current_path: &Path) -> Result<PathBuf, ErrorType> {
+        fn local_to_source(&self, current_path: &Path) -> Result<PathBuf, Trap> {
             let mut result = PathBuf::from(self.host_config.source.clone());
             let current_path_components = current_path.components().collect::<Vec<_>>(); // destination/identifier/datetime/filestem/...
 
@@ -185,7 +185,7 @@ pub mod rsync {
         /// ...
         ///
         ///
-        fn backup(&mut self) -> Result<(), ErrorType> {
+        fn backup(&mut self) -> Result<(), Trap> {
 
             self.debug("... connecting");
             self.connect()?;
@@ -245,7 +245,7 @@ pub mod rsync {
             Ok(())
         }
 
-        fn auth(&mut self) -> Result<(), ErrorType> {
+        fn auth(&mut self) -> Result<(), Trap> {
 
             // key path
             let default_key_path = "$HOME/.ssh/ed25519";
@@ -263,20 +263,20 @@ pub mod rsync {
             match self.sess.as_ref() {
                 Some(session) => {
                     if let Err(err) = session.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None) {
-                        log_error(ErrorType::Auth, format!("Could not Authenticate session: {}", err).as_str());
-                        return Err(ErrorType::Auth);
+                        log_trap(Trap::Auth, format!("Could not Authenticate session: {}", err).as_str());
+                        return Err(Trap::Auth);
                     }
                 },
                 None => {
-                    log_error(ErrorType::Auth, "Session is None");
-                    return Err(ErrorType::Auth);
+                    log_trap(Trap::Auth, "Session is None");
+                    return Err(Trap::Auth);
                 }
             }
 
             Ok(())
         }
 
-        fn connect(&mut self) -> Result<(), ErrorType> {
+        fn connect(&mut self) -> Result<(), Trap> {
             let identifier = match &self.host_config.identifier {
                 HostIdentifier::Ip(ip) => ip,
                 HostIdentifier::Hostname(hostname) => hostname,
@@ -287,21 +287,21 @@ pub mod rsync {
 
             // Connect to SSH server
             let tcp = TcpStream::connect(format!("{}:{}", identifier, port)).map_err(|err| {
-                log_error(ErrorType::Connect, format!("Could not connect to host: {}", err).as_str());
-                ErrorType::Connect
+                log_trap(Trap::Connect, format!("Could not connect to host: {}", err).as_str());
+                Trap::Connect
             })?;
 
             // Create SSH session
             let mut sess = Session::new().map_err(|err| {
-                log_error(ErrorType::Session, format!("Could not create SSH session: {}", err).as_str());
-                ErrorType::Session
+                log_trap(Trap::Session, format!("Could not create SSH session: {}", err).as_str());
+                Trap::Session
             })?;
 
             // Perform SSH handshake
             sess.set_tcp_stream(tcp);
             sess.handshake().map_err(|err| {
-                log_error(ErrorType::Handshake, format!("Could not perform SSH handshake: {}", err).as_str());
-                ErrorType::Handshake
+                log_trap(Trap::Handshake, format!("Could not perform SSH handshake: {}", err).as_str());
+                Trap::Handshake
             })?;
 
             self.sess = Some(sess);
@@ -310,23 +310,23 @@ pub mod rsync {
         
         /// Copy remote directory to destination.
         /// Will recurse and call copy_remote_file(...) until all contents are copied.
-        fn copy_remote_directory(&self, source: &Path, destination: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_directory(&self, source: &Path, destination: &Path) -> Result<(), Trap> {
             // Create destination directory if it doesn't exist
             if !destination.exists() {
                 fs::create_dir_all(destination).map_err(|err| {
-                    log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
-                    ErrorType::FS
+                    log_trap(Trap::FS, format!("Could not create directory: {}", err).as_str());
+                    Trap::FS
                 })?;
                 println!("...destdir created");
             }
             
             let dir_entries = self.sess.as_ref().unwrap().sftp().map_err(|err| {
-                log_error(ErrorType::Copy, format!("Could not init SFTP: {}", err).as_str());
-                ErrorType::Copy
+                log_trap(Trap::Copy, format!("Could not init SFTP: {}", err).as_str());
+                Trap::Copy
             })?
             .readdir(source).map_err(|err| {
-                log_error(ErrorType::Copy, format!("Could not read remote directory: {}", err).as_str());
-                ErrorType::Copy
+                log_trap(Trap::Copy, format!("Could not read remote directory: {}", err).as_str());
+                Trap::Copy
             })?;
 
             for (entry, stat) in dir_entries {
@@ -335,7 +335,7 @@ pub mod rsync {
                         entryname 
                     },
                     None => {
-                        log_error(ErrorType::Copy, "Empty file");
+                        log_trap(Trap::Copy, "Empty file");
                         continue;
                     },
                 };
@@ -350,8 +350,8 @@ pub mod rsync {
                 else if stat.is_dir() {
                     let destination_subdir = destination.join(&entryname);
                     fs::create_dir_all(&destination_subdir).map_err(|err| {
-                        log_error(ErrorType::FS, format!("Could not create directory: {}", err).as_str());
-                        ErrorType::FS
+                        log_trap(Trap::FS, format!("Could not create directory: {}", err).as_str());
+                        Trap::FS
                     })?;
 
                     self.copy_remote_directory(&new_source, &new_destination)?;
@@ -362,7 +362,7 @@ pub mod rsync {
         }
 
         /// Copy remote file (source) to destination.
-        fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), ErrorType> {
+        fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), Trap> {
             if self.incremental {
                 // check mtime data at local and source
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
@@ -380,13 +380,13 @@ pub mod rsync {
             *---------------------------------------------------------------------------*/
 
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(source).map_err(|err| {
-                log_error(ErrorType::Copy, format!("Could not receive file from remote path: {}", err).as_str());
-                ErrorType::Copy
+                log_trap(Trap::Copy, format!("Could not receive file from remote path: {}", err).as_str());
+                Trap::Copy
             })?;
 
             let mut file = fs::File::create(destination).map_err(|err| {
-                log_error(ErrorType::FS, format!("Could not create file: {}", err).as_str());
-                ErrorType::FS
+                log_trap(Trap::FS, format!("Could not create file: {}", err).as_str());
+                Trap::FS
             })?;
 
             let mut buffer = [0; 4096];
@@ -395,14 +395,14 @@ pub mod rsync {
                     Ok(0) => break,
                     Ok(n) => {
                         file.write_all(&buffer[..n]).map_err(|err| {
-                            log_error(ErrorType::FS, format!("Could not write to file: {}", err).as_str());
-                            ErrorType::FS
+                            log_trap(Trap::FS, format!("Could not write to file: {}", err).as_str());
+                            Trap::FS
                         })?;
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(err) => {
-                        log_error(ErrorType::Copy, format!("Could not read from channel: {}", err).as_str());
-                        return Err(ErrorType::Copy);
+                        log_trap(Trap::Copy, format!("Could not read from channel: {}", err).as_str());
+                        return Err(Trap::Copy);
                     }
                 }
             }

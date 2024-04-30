@@ -10,7 +10,7 @@ use crate::traits;
 use traits::FileSerializable;
 
 use crate::logging;
-use logging::{log_error, ErrorType};
+use logging::{log_trap, Trap};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum HostIdentifier {

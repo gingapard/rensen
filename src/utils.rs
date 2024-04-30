@@ -12,7 +12,7 @@ use ssh2::FileStat;
 use chrono::Utc;
 
 use crate::logging;
-use logging::{log_error, ErrorType};
+use logging::{log_trap, Trap};
 
 pub fn get_datetime() -> String {
   let now = Utc::now();
@@ -20,7 +20,7 @@ pub fn get_datetime() -> String {
 }
 
 /// Sets the metadata for $file according to $stat
-pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), ErrorType> {
+pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), Trap> {
 
     // len/size
     let _ = file.set_len(stat.size.unwrap_or(0));
@@ -103,18 +103,18 @@ fn test_hash() {
     }
 }
 /// Read the next 1024 bytes from the 'pos'-th byte.
-pub fn hash_file(path: &Path, pos: u64) -> Result<String, ErrorType> {
+pub fn hash_file(path: &Path, pos: u64) -> Result<String, Trap> {
     let mut file = File::open(path).map_err(|err| {
-        log_error(ErrorType::FS, format!("Could not open {:?}: {}", path, err).as_str());
-        ErrorType::FS
+        log_trap(Trap::FS, format!("Could not open {:?}: {}", path, err).as_str());
+        Trap::FS
     })?;
 
     let mut sha3_256 = Sha3_256::new();
     let mut buffer = [0; 1024];
 
     file.seek(SeekFrom::Start(pos)).map_err(|err| {
-        log_error(ErrorType::FS, format!("Could not seek in {:?}: {}", path, err).as_str());
-        ErrorType::FS
+        log_trap(Trap::FS, format!("Could not seek in {:?}: {}", path, err).as_str());
+        Trap::FS
     })?;
 
     match file.read(&mut buffer) {
@@ -122,8 +122,8 @@ pub fn hash_file(path: &Path, pos: u64) -> Result<String, ErrorType> {
             sha3_256.update(&buffer[..bytes_read]);
         }
         Err(err) => {
-            log_error(ErrorType::FS, format!("Could not read from {:?}: {}", path, err).as_str());
-            return Err(ErrorType::FS);
+            log_trap(Trap::FS, format!("Could not read from {:?}: {}", path, err).as_str());
+            return Err(Trap::FS);
         }
     }
 

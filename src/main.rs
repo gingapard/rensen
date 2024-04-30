@@ -1,5 +1,6 @@
 pub mod record;
 pub mod logging;
+pub mod compiler;
 pub mod utils;
 pub use utils::hash_file;
 pub mod backup; pub mod config; pub mod tests;
@@ -10,7 +11,7 @@ pub use traits::{Rsync, FileSerializable};
 use backup::rsync::*;
 
 use config::*;
-use logging::ErrorType;
+use logging::Trap;
 
 use record::Record;
 use std::{env, net, io::Result, path::{Path, PathBuf}, error};

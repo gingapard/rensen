@@ -1,5 +1,5 @@
 use crate::logging;
-use logging::{ErrorType, log_error};
+use logging::{Trap, log_trap};
 use std::path::Path;
 
 pub trait FileSerializable: Sized { 
@@ -14,9 +14,9 @@ pub trait FileSerializable: Sized {
 }
 
 pub trait Rsync {
-    fn backup(&mut self) -> Result<(), ErrorType>;
-    fn auth(&mut self) -> Result<(), ErrorType>;
-    fn connect(&mut self) -> Result<(), ErrorType>;
-    fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
-    fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), ErrorType>;
+    fn backup(&mut self) -> Result<(), Trap>;
+    fn auth(&mut self) -> Result<(), Trap>;
+    fn connect(&mut self) -> Result<(), Trap>;
+    fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), Trap>;
+    fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), Trap>;
 }
