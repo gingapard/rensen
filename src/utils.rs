@@ -42,27 +42,32 @@ pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), Trap> {
 
 /// Archive directory with Tarball (tar::Builder) and
 /// compress with Gz (flate2::write::GzeEncoder, flate2::Compression).
-pub fn archive_compress_dir(path: &Path, output_file_path: &Path) -> io::Result<()> {
+pub fn make_tar_gz(source: &Path, destination: &Path) -> io::Result<()> {
     // Temp tar file
     let tar_file_path = "temp.tar";
     let tar_file = File::create(tar_file_path)?;
 
     // Create a tarball
     let mut tar_builder = Builder::new(tar_file);
-    add_dir_contents_to_tar(path, &mut tar_builder, path)?;
+    add_dir_contents_to_tar(source, &mut tar_builder, source)?;
     tar_builder.finish()?;
 
     // Gzip compress
     let tar_file = File::open(tar_file_path)?;
-    let gz_file = File::create(output_file_path)?;
+    let gz_file = File::create(destination)?;
     let gz_encoder = GzEncoder::new(BufWriter::new(gz_file), Compression::default());
     io::copy(&mut BufReader::new(tar_file), &mut BufWriter::new(gz_encoder))?;
 
     // Cleanup: remove temp tar file, remove uncompressed file
     fs::remove_file(tar_file_path)?;
-    if path != Path::new("/") {
-        let _ = fs::remove_dir_all(path);
+    if source != Path::new("/") {
+        let _ = fs::remove_dir_all(source);
     }
+
+    Ok(())
+}
+
+pub fn demake_tar_gz(source: &Path, destination: &Path) -> io::Result<()> {
 
     Ok(())
 }
@@ -86,12 +91,6 @@ fn add_dir_contents_to_tar(
         }
     }
     Ok(())
-}
-
-#[cfg(test)]
-#[test]
-fn test_compress_archive() {
-
 }
 
 #[test]

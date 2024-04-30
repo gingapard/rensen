@@ -8,7 +8,7 @@ pub mod rsync {
     use crate::traits::{Rsync, FileSerializable};
     use crate::logging::{log_trap, Trap};
     use crate::config::*;
-    use crate::utils::{archive_compress_dir, set_metadata, get_datetime};
+    use crate::utils::{make_tar_gz, set_metadata, get_datetime};
     use crate::record::Record;
     use crate::snapshot::PathPair;
 
@@ -237,7 +237,7 @@ pub mod rsync {
                 
             // compressing the ../$destination/$identifer/$datetime(parent of complete_destination)
             self.debug("... compressing");
-            let _ = archive_compress_dir(&self.host_config.destination, 
+            let _ = make_tar_gz(&self.host_config.destination, 
                 Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
             );
             self.debug("... successs!");
