@@ -13,6 +13,7 @@ pub enum Trap {
     FS,
     Config,
     Copy,
+    Missing
 }
 
 pub fn log_trap(trap: Trap, msg: &str) {

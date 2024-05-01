@@ -126,21 +126,26 @@ impl ConvertFromPath for String {
     }
 }
 
-/// If the path has a file extension, it will remove the file extension
+/// If the path has a file extension, it will remove the file extension 
 /// and return the Some(S)
-pub fn strip_extension<S>(path: S) -> Option<S>
+///
+/// # Example:
+///
+/// (path/to/this/file.tar.gz -> path/to/this/file)
+///
+pub fn strip_extension<S>(path: &S) -> S
 where 
     S: AsRef<Path> + Clone + ConvertFromPath,
 {
     let path = path.as_ref();
 
-    if let Some(stem) = path.file_stem() {
+    if let Some(stem) = &path.file_stem() {
         let stem_str = stem.to_string_lossy().to_string();
         let new_path = Path::new(&stem_str);
-        return Some(S::convert_from_path(new_path));
+        return S::convert_from_path(new_path);
     }
 
-    return None
+    return S::convert_from_path(path);
 }
 
 #[test]
