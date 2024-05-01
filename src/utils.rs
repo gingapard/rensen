@@ -1,10 +1,10 @@
 use std::fs::{self, File};
 use std::io::{self, SeekFrom, BufReader, BufWriter};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::prelude::*;
-use flate2::write::GzEncoder;
+use flate2::{write::GzEncoder, read::GzDecoder};
 use flate2::Compression;
-use tar::Builder;
+use tar::{Builder, Archive};
 use sha3::{Digest, Sha3_256};
 use std::os::unix::fs::{PermissionsExt, MetadataExt, FileExt};
 use std::time::{SystemTime, Duration};
@@ -14,9 +14,10 @@ use chrono::Utc;
 use crate::logging;
 use logging::{log_trap, Trap};
 
+use crate::traits::ConvertFromPath;
+
 pub fn get_datetime() -> String {
-  let now = Utc::now();
-  return format!("{}", now.format("%Y-%m-%d-%H-%M-%SZ"));
+  return Utc::now().format("%Y-%m-%d-%H-%M-%SZ").to_string()
 }
 
 /// Sets the metadata for $file according to $stat
@@ -31,18 +32,27 @@ pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), Trap> {
     }
 
     // File Times
+    let default_value: u64 = 0;
+
     let file_times = fs::FileTimes::new();
-    file_times.set_accessed(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.atime.unwrap_or(0)));
-    file_times.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.mtime.unwrap_or(0)));
+    file_times.set_accessed(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.atime.unwrap_or(default_value)));
+    file_times.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.mtime.unwrap_or(default_value)));
     let _ = file.set_times(file_times);
-    let _ = file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.mtime.unwrap_or(0)));
+    let _ = file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(stat.mtime.unwrap_or(default_value)));
 
     Ok(())
 }
 
 /// Archive directory with Tarball (tar::Builder) and
 /// compress with Gz (flate2::write::GzeEncoder, flate2::Compression).
-pub fn make_tar_gz(source: &Path, destination: &Path) -> io::Result<()> {
+pub fn make_tar_gz<SRC, DST>(source: SRC, destination: DST) -> io::Result<()>
+where 
+    SRC: AsRef<Path>,
+    DST: AsRef<Path>
+{
+    let source = source.as_ref();
+    let destination = destination.as_ref();
+
     // Temp tar file
     let tar_file_path = "temp.tar";
     let tar_file = File::create(tar_file_path)?;
@@ -59,15 +69,7 @@ pub fn make_tar_gz(source: &Path, destination: &Path) -> io::Result<()> {
     io::copy(&mut BufReader::new(tar_file), &mut BufWriter::new(gz_encoder))?;
 
     // Cleanup: remove temp tar file, remove uncompressed file
-    fs::remove_file(tar_file_path)?;
-    if source != Path::new("/") {
-        let _ = fs::remove_dir_all(source);
-    }
-
-    Ok(())
-}
-
-pub fn demake_tar_gz(source: &Path, destination: &Path) -> io::Result<()> {
+    let _ = fs::remove_dir_all(source);
 
     Ok(())
 }
@@ -90,7 +92,55 @@ fn add_dir_contents_to_tar(
             tar_builder.append_path_with_name(&path, name)?;
         }
     }
+
     Ok(())
+}
+
+pub fn demake_tar_gz<SRC, DST>(source: SRC, destination: DST) -> io::Result<()>
+where
+    SRC: AsRef<Path>,
+    DST: AsRef<Path>,
+{
+    let destination = destination.as_ref();
+
+    let _ = fs::create_dir_all(destination);
+
+    let gz_file = fs::File::open(source)?;
+    let gz_decoder = GzDecoder::new(BufReader::new(gz_file));
+
+    let mut archive = Archive::new(gz_decoder);
+    archive.unpack(destination)?;
+
+    Ok(())
+}
+
+impl ConvertFromPath for PathBuf {
+    fn convert_from_path(path: &Path) -> Self {
+        path.to_path_buf()
+    }
+}
+
+impl ConvertFromPath for String {
+    fn convert_from_path(path: &Path) -> Self {
+        path.to_string_lossy().to_string()
+    }
+}
+
+/// If the path has a file extension, it will remove the file extension
+/// and return the Some(S)
+pub fn strip_extension<S>(path: S) -> Option<S>
+where 
+    S: AsRef<Path> + Clone + ConvertFromPath,
+{
+    let path = path.as_ref();
+
+    if let Some(stem) = path.file_stem() {
+        let stem_str = stem.to_string_lossy().to_string();
+        let new_path = Path::new(&stem_str);
+        return Some(S::convert_from_path(new_path));
+    }
+
+    return None
 }
 
 #[test]

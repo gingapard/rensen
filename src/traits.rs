@@ -20,3 +20,7 @@ pub trait Rsync {
     fn copy_remote_directory(&self, remote_path: &Path, dest_path: &Path) -> Result<(), Trap>;
     fn copy_remote_file(&self, remote_path: &Path, dest_path: &Path) -> Result<(), Trap>;
 }
+
+pub trait ConvertFromPath {
+    fn convert_from_path(path: &Path) -> Self;
+}

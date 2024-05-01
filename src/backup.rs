@@ -108,7 +108,7 @@ pub mod rsync {
                         self.update_record(&current_path)?;
                     } else {
 
-                        let source = self.local_to_source(&current_path)?;
+                        let source = self.into_source(&current_path)?;
                         let mtime = self.local_file_mtime(&current_path)?;
                         let pathpair = PathPair::from(source, current_path);
 
@@ -134,7 +134,7 @@ pub mod rsync {
         }
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
-        fn local_to_source(&self, current_path: &Path) -> Result<PathBuf, Trap> {
+        fn into_source(&self, current_path: &Path) -> Result<PathBuf, Trap> {
             let mut result = PathBuf::from(self.host_config.source.clone());
             let current_path_components = current_path.components().collect::<Vec<_>>(); // destination/identifier/datetime/filestem/...
 
@@ -161,7 +161,7 @@ pub mod rsync {
 
         /// Remote sync backup using ssh/sftp
         /// Default port: 22
-        /// Default keypath: "$HOME/.ssh/id_rsa"
+        /// Default keypath: "$HOME/.ssh/ed25519
         /// Compare last-modified timestamp of files with matching namesm,
         /// ignoring those with matching timestamp. 
         /// You take one full backup, and the take incremental backups 
@@ -255,10 +255,6 @@ pub mod rsync {
 
             let private_key_path = Path::new(&key_path);
 
-            println!("key_path: {:?}", private_key_path);
-            println!("user: {}", self.host_config.user);
-            println!("identifier: {:?}", self.host_config.identifier);
-
             // Authenticate session (private key --> public key)
             match self.sess.as_ref() {
                 Some(session) => {
@@ -282,7 +278,6 @@ pub mod rsync {
                 HostIdentifier::Hostname(hostname) => hostname,
             };
 
-            // ext port
             let port = self.host_config.port.unwrap_or(22);
 
             // Connect to SSH server
@@ -367,7 +362,7 @@ pub mod rsync {
                 // check mtime data at local and source
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
 
-                let dest_as_source = self.local_to_source(destination)?;
+                let dest_as_source = self.into_source(destination)?;
                 if remote_mtime <= self.record.snapshot.mtime(&dest_as_source).unwrap_or(&0) {
                     println!("not copying");
                     return Ok(());

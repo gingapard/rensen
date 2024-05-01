@@ -7,18 +7,13 @@ use crate::snapshot::*;
 use crate::utils::*;
 
 pub struct Compiler {
-    pub record: Record
-}
-
-impl From<Record> for Compiler {
-    fn from(record: Record) -> Self {
-        Compiler { record }
-    }
+    pub snapshot_path: PathBuf,
+    pub record: Record 
 }
 
 impl Compiler {
-    
-    pub fn compile_from_record(&self) -> Result<(), Trap> {
+
+    pub fn compile_from_record(&self, destination: &Path) -> Result<(), Trap> {
 
         Ok(())
     }
