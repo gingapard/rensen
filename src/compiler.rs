@@ -42,10 +42,7 @@ impl Compiler {
     pub fn compile_snapshot(&self) -> Result<(), Trap> {
         
         for entry in self.snapshot.entries.iter() {
-            let local_path = &entry.1.path;
-            
         }
-
 
         Ok(())
     }

@@ -16,12 +16,12 @@ impl PathBufx {
     pub fn new() -> Self {
         PathBufx {
             full_path: PathBuf::new(),
-            base_path; PathBuf::new(),
+            base_path: PathBuf::new(),
             mtime: u64::MIN,
         }
     }
 
-    pub fn from(path: PathBuf, base_path: PathBuf, mtime: u64) -> Self {
+    pub fn from(full_path: PathBuf, base_path: PathBuf, mtime: u64) -> Self {
         PathBufx {
             full_path,
             base_path,
@@ -68,8 +68,8 @@ impl Snapshot {
         }
     }
 
-    pub fn add_entry(&mut self, pathpair: PathPair, mtime: u64) {
-        self.entries.insert(pathpair.source, PathBufx::from(pathpair.destination, mtime));
+    pub fn add_entry(&mut self, pathpair: PathPair, base_path: PathBuf, mtime: u64) {
+        self.entries.insert(pathpair.source, PathBufx::from(pathpair.destination, base_path, mtime));
     }
 
     pub fn mark_as_deleted(&mut self, pair: PathPair) {
@@ -95,7 +95,7 @@ impl Snapshot {
 
     pub fn path(&self, key: &PathBuf) -> Option<&PathBuf> {
         if let Some(entry) = &self.entries.get(key) {
-            return Some(&entry.path);
+            return Some(&entry.full_path);
         }
 
         None

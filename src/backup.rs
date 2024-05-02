@@ -16,10 +16,6 @@ pub mod rsync {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
         pub sess: Option<Session>,
-        
-        // ergonomical info:
-
-        pub current_base_path: Option<PathBuf>,
         pub incremental: bool,
         pub debug: bool,
     }
@@ -30,7 +26,6 @@ pub mod rsync {
                 host_config,
                 record,
                 sess: None,
-                current_base_path: None,
                 incremental: false,
                 debug,
             }
@@ -126,7 +121,7 @@ pub mod rsync {
                             self.record.snapshot.undelete(&pathpair);
                         }
 
-                        self.record.snapshot.add_entry(pathpair.clone(), mtime);
+                        self.record.snapshot.add_entry(pathpair.clone(), self.host_config.destination.clone(), mtime);
                     }
                 }
             }
