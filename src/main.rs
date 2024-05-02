@@ -3,17 +3,19 @@ pub mod logging;
 pub mod compiler;
 pub mod utils;
 pub use utils::hash_file;
-pub mod backup; pub mod config; pub mod tests;
+pub mod backup; 
+pub mod config; 
+pub mod tests;
 pub mod traits;
 pub mod snapshot;
 pub use traits::{Rsync, FileSerializable};
 
 use backup::rsync::*;
 
-use config::*;
+pub use config::*;
 use logging::Trap;
 
-use record::Record;
+pub use record::Record;
 use std::{env, net, io::Result, path::{Path, PathBuf}, error};
 // use std::collections::HashMap;
 use env_logger;
@@ -21,7 +23,7 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts.yml"))?;
+    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
     /*
     let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
     entries.insert("/home/bam/backups/file1".into(), 90);

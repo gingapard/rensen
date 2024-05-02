@@ -87,6 +87,7 @@ pub mod rsync {
                             .to_path_buf()
                     );
 
+                    println!("deleting: {:?}", pair);
                     self.record.snapshot.mark_as_deleted(pair);
                 }
             }
@@ -111,6 +112,7 @@ pub mod rsync {
                         let source = self.into_source(&current_path)?;
                         let mtime = self.local_file_mtime(&current_path)?;
                         let pathpair = PathPair::from(source, current_path);
+                        println!("{:?}", pathpair);
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
@@ -364,7 +366,9 @@ pub mod rsync {
 
                 let dest_as_source = self.into_source(destination)?;
                 if remote_mtime <= self.record.snapshot.mtime(&dest_as_source).unwrap_or(&0) {
-                    println!("not copying");
+                    if self.debug {
+                        self.debug(format!("skipping: {:?}", source).as_str());
+                    }
                     return Ok(());
                 }
             }

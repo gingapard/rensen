@@ -70,6 +70,7 @@ where
 
     // Cleanup: remove temp tar file, remove uncompressed file
     let _ = fs::remove_dir_all(source);
+    let _ = fs::remove_file(tar_file_path);
 
     Ok(())
 }
@@ -133,19 +134,19 @@ impl ConvertFromPath for String {
 ///
 /// (path/to/this/file.tar.gz -> path/to/this/file)
 ///
-pub fn strip_extension<S>(path: &S) -> S
+pub fn strip_extension<P>(path: &P) -> P
 where 
-    S: AsRef<Path> + Clone + ConvertFromPath,
+    P: AsRef<Path> + Clone + ConvertFromPath,
 {
     let path = path.as_ref();
 
     if let Some(stem) = &path.file_stem() {
         let stem_str = stem.to_string_lossy().to_string();
         let new_path = Path::new(&stem_str);
-        return S::convert_from_path(new_path);
+        return P::convert_from_path(new_path);
     }
 
-    return S::convert_from_path(path);
+    return P::convert_from_path(path);
 }
 
 #[test]
