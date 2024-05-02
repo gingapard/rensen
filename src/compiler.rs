@@ -8,9 +8,11 @@ use crate::traits::FileSerializable;
 
 use crate::record::Record;
 
-
+/// Compiler for compiling snapshots into one,
+/// using the .inner.join record of a specific snapshot.
 pub struct Compiler {
-    pub snapshot: Snapshot
+    pub snapshot: Snapshot,
+    pub inner_path: PathBuf
 }
 
 impl Compiler {
@@ -23,7 +25,8 @@ impl Compiler {
             Trap::FS
         });
 
-        let record = match Record::deserialize_json(&stripped_path.join(".inner.json")) {
+        let inner_record_path = &stripped_path.join(".inner.json");
+        let record = match Record::deserialize_json(inner_record_path) {
             Ok(v) => v,
             Err(err) => {
                 log_trap(Trap::FS, format!("Could not deserialize inner record: {}", err).as_str());
@@ -32,13 +35,26 @@ impl Compiler {
         };
             
 
-        Ok(Compiler { snapshot: record.snapshot })
+        Ok(Compiler { snapshot: record.snapshot, inner_path: inner_record_path.to_path_buf() })
     }
 
-    pub fn compile_from_record(&self, destination: &Path) -> Result<(), Trap> {
+    /// Compiling a snapshot according to self.snapshot
+    pub fn compile_snapshot(&self) -> Result<(), Trap> {
+        
+        for entry in self.snapshot.entries.iter() {
+            let local_path = &entry.1.path;
+            
+        }
+
 
         Ok(())
     }
 
 
+}
+
+#[cfg(test)]
+#[test]
+pub fn test_compiler() {
+    let compiler = Compiler::from("/home/bam/backups/192.168.1.76/2024-05-02-06-42-09Z.tar.gz".into());
 }

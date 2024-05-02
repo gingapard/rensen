@@ -9,7 +9,7 @@ pub fn test_serialize_json() {
 
     let path = Path::new("../tests/test.json");
     // first host
-    let host1 = config::HostConfig::new(
+    let host1 = config::HostConfig::from(
         "user".to_string(),
         config::HostIdentifier::Ip(String::from("192.168.1.0/24")),
         22,
@@ -33,7 +33,7 @@ pub fn test_deserialize_json() {
 #[test]
 pub fn test_serialize_yaml() {
     let path = Path::new("tests/test.yaml");
-    let host1 = config::HostConfig::new(
+    let host1 = config::HostConfig::from(
         "user".to_string(),
         config::HostIdentifier::Ip(String::from("192.168.1.0/24")),
         22,
@@ -44,7 +44,7 @@ pub fn test_serialize_yaml() {
         false,
     );
     
-    let host2 = config::HostConfig::new(
+    let host2 = config::HostConfig::from(
         "user2".to_string(),
         config::HostIdentifier::Ip(String::from("192.168.1.0/24")),
         22,

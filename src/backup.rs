@@ -16,6 +16,10 @@ pub mod rsync {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
         pub sess: Option<Session>,
+        
+        // ergonomical info:
+
+        pub current_base_path: Option<PathBuf>,
         pub incremental: bool,
         pub debug: bool,
     }
@@ -26,6 +30,7 @@ pub mod rsync {
                 host_config,
                 record,
                 sess: None,
+                current_base_path: None,
                 incremental: false,
                 debug,
             }
