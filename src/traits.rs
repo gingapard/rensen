@@ -1,6 +1,6 @@
 use crate::logging;
 use logging::{Trap, log_trap};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub trait FileSerializable: Sized { 
     /// Wrapper for serde::json
@@ -24,3 +24,4 @@ pub trait Rsync {
 pub trait ConvertFromPath {
     fn convert_from_path(path: &Path) -> Self;
 }
+

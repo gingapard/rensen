@@ -1,0 +1,25 @@
+{
+  "interval_n": 0,
+  "intervals": [],
+  "snapshot": {
+    "entries": {
+      "/home/mc/testing/.test2.swp": {
+        "path": "/home/bam/backups/192.168.1.76/2024-05-02-06-35-32Z/testing/.test2.swp",
+        "mtime": 1714631182
+      },
+      "/home/mc/testing/test2": {
+        "path": "/home/bam/backups/192.168.1.76/2024-05-02-06-35-32Z/testing/test2",
+        "mtime": 1714631395
+      },
+      "/home/mc/testing/test1": {
+        "path": "/home/bam/backups/192.168.1.76/2024-05-02-06-35-32Z/testing/test1",
+        "mtime": 1714631177
+      },
+      "/home/mc/testing/test3": {
+        "path": "/home/bam/backups/192.168.1.76/2024-05-02-06-35-32Z/testing/test3",
+        "mtime": 1714631402
+      }
+    },
+    "deleted_entries": []
+  }
+}

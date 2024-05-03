@@ -127,6 +127,13 @@ impl ConvertFromPath for String {
     }
 }
 
+pub fn strip_extension(path: &mut PathBuf) {
+    if let Some(stem) = path.clone().file_stem() {
+        path.pop();
+        path.push(stem);
+    }
+}
+
 /// If the path has a file extension, it will remove the file extension 
 /// and return the Some(S)
 ///
@@ -134,19 +141,19 @@ impl ConvertFromPath for String {
 ///
 /// (path/to/this/file.tar.gz -> path/to/this/file)
 ///
-pub fn strip_extension<P>(path: &P) -> P
-where 
-    P: AsRef<Path> + Clone + ConvertFromPath,
-{
-    let path = path.as_ref();
+pub fn strip_tar_gz_extension(path: &Path) -> PathBuf {
+    let mut path = path.to_path_buf();
+    strip_extension(&mut path);
+    strip_extension(&mut path);
 
-    if let Some(stem) = &path.file_stem() {
-        let stem_str = stem.to_string_lossy().to_string();
-        let new_path = Path::new(&stem_str);
-        return P::convert_from_path(new_path);
-    }
+    return path;
+}
 
-    return P::convert_from_path(path);
+#[test]
+fn test_strip_tar_gz_extension() {
+    let original = PathBuf::from("path/to/certain/path.tar.gz");
+    let new = strip_tar_gz_extension(&original);
+    assert!(original == new,"{:?} - {:?}", original, new);
 }
 
 #[test]
@@ -157,6 +164,7 @@ fn test_hash() {
         Err(err) => panic!("Error: {:?}", err),
     }
 }
+
 /// Read the next 1024 bytes from the 'pos'-th byte.
 pub fn hash_file(path: &Path, pos: u64) -> Result<String, Trap> {
     let mut file = File::open(path).map_err(|err| {

@@ -18,7 +18,7 @@ pub struct Compiler {
 impl Compiler {
 
     pub fn from(snapshot_path: PathBuf) -> Result<Self, Trap> {
-        let stripped_path = strip_extension(&snapshot_path); // removing the .tar.gz
+        let stripped_path = strip_tar_gz_extension(&snapshot_path); // removing the .tar.gz
 
         let _ = demake_tar_gz(&snapshot_path, &stripped_path).map_err(|err| {
             log_trap(Trap::FS, format!("Could not demake {:?}: {}", snapshot_path, err).as_str());
