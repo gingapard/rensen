@@ -42,6 +42,7 @@ impl Compiler {
     pub fn compile_snapshot(&self) -> Result<(), Trap> {
         
         for entry in self.snapshot.entries.iter() {
+            // w
         }
 
         Ok(())
@@ -53,5 +54,5 @@ impl Compiler {
 #[cfg(test)]
 #[test]
 pub fn test_compiler() {
-    let compiler = Compiler::from("/home/bam/backups/192.168.1.76/2024-05-02-06-42-09Z.tar.gz".into());
+    let compiler = Compiler::from("/home/dto/backups/192.168.1.47/2024-04-30-14-28-59Z.tar.gz".into());
 }

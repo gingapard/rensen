@@ -70,7 +70,7 @@ where
 
     // Cleanup: remove temp tar file, remove uncompressed file
     let _ = fs::remove_dir_all(source);
-    let _ = fs::remove_file(tar_file_path);
+//    let _ = fs::remove_file(tar_file_path);
 
     Ok(())
 }
@@ -127,6 +127,8 @@ impl ConvertFromPath for String {
     }
 }
 
+/// Pops filestem and adds it back without the last
+/// dot-extension.
 pub fn strip_extension(path: &mut PathBuf) {
     if let Some(stem) = path.clone().file_stem() {
         path.pop();
