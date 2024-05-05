@@ -70,7 +70,7 @@ where
 
     // Cleanup: remove temp tar file, remove uncompressed file
     let _ = fs::remove_dir_all(source);
-//    let _ = fs::remove_file(tar_file_path);
+    let _ = fs::remove_file(tar_file_path);
 
     Ok(())
 }

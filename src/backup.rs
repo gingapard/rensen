@@ -5,6 +5,7 @@ pub mod rsync {
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
     use std::path::{Path, PathBuf};
+    use std::ffi::OsStr;
     use crate::traits::{Rsync, FileSerializable};
     use crate::logging::{log_trap, Trap};
     use crate::config::*;
@@ -16,6 +17,12 @@ pub mod rsync {
         pub host_config: &'a mut HostConfig,
         pub record: Record,
         pub sess: Option<Session>,
+
+        // paths
+        host_root_path: Option<PathBuf>,
+        snapshot_root_path: Option<PathBuf>,
+        complete_destination: Option<PathBuf>,
+
         pub incremental: bool,
         pub debug: bool,
     }
@@ -26,6 +33,11 @@ pub mod rsync {
                 host_config,
                 record,
                 sess: None,
+
+                host_root_path: None,
+                snapshot_root_path: None,
+                complete_destination: None,
+
                 incremental: false,
                 debug,
             }
@@ -144,7 +156,7 @@ pub mod rsync {
             // This is so that it can remove the common prefix from the current_path, and replace
             // it with self.host_config.remote_path instead
             let common_path_prefix = current_path.components()
-                .zip(self.host_config.destination.components())
+                .zip(self.snapshot_root_path.clone().unwrap().components())
                 .take_while(|(a, b)| a == b)
                 .map(|(a, _)| a)
                 .collect::<Vec<_>>()
@@ -198,49 +210,63 @@ pub mod rsync {
             self.debug("successs!");
 
             let datetime = get_datetime();
+            let source = &self.host_config.source;
 
-            // Formatting destination to fit into file structure
-            // Adding identifier onto dest_path, and then adding the remote_path dir onto it again.
-            // Result = destination/identifier/remote_dir/ ex.
-            //
-            // Adding identifier: $HOME/destination/$identifier/$datetime
-            self.host_config.destination = self.host_config.destination
-                .join(&self.host_config.identifier)
-                .join(datetime);
+            // $HOME/destination/$identifier
+            self.host_root_path = Some(self.host_config.destination
+                .join(&self.host_config.identifier));
 
-            let source = self.host_config.source.clone();
+            // $HOME/destination/$identifier/$datetime
+            self.snapshot_root_path = Some(self.host_root_path.clone().unwrap()
+                .join(datetime));
 
-            // Adding filestem: $HOME/destination/identifier/$current_time/$filestem
-            // This is the complete destination, where the files will be copied to.
-            // The self.host_config.destination is still preserved so that it can
-            // be archived and compressed later.
-            let complete_destination = if let Some(stem) = &self.host_config.source.file_stem() {
-                self.host_config.destination.join(stem)
+            // $HOME/destination/$identifier/$datetime/dir_name
+            self.complete_destination = if let Some(stem) = &self.host_config.source.file_stem() {
+                Some(self.snapshot_root_path.clone().unwrap().join(stem))
             } else {
-                self.host_config.destination.join(format!("{}", self.host_config.identifier))  
+                Some(self.snapshot_root_path.clone().unwrap().join(format!("{}", self.host_config.identifier)))
             };
 
             self.debug("... copying files");
-            self.copy_remote_directory(&source, &complete_destination)?;
+            self.copy_remote_directory(&source, &self.complete_destination.clone().unwrap())?;
             self.debug("... successs!");
 
             self.debug("... updating records");
-            self.update_record(&mut self.host_config.destination.clone())?;
+            self.update_record(&mut self.snapshot_root_path.clone().unwrap())?;
             self.debug("... successs!");
 
-            let mut record_path = self.host_config.destination.clone();
+            // $HOME/destination/$identifier/.records
+            let record_dir_path = self.host_root_path.clone().unwrap()
+                .join(".records");
 
-            // inner
-            let _ = self.record.serialize_json(&record_path.join(".inner.json"));
+            if !record_dir_path.exists() {
+                fs::create_dir_all(&record_dir_path).map_err(|err| {
+                    log_trap(Trap::FS, format!("Could not create directory: {}", err).as_str());
+                    Trap::FS
+                })?;
+            }
 
-            // outer
-            record_path.pop();
-            let _ = self.record.serialize_json(&record_path.join(".outer.json"));
-                
-            // compressing the ../$destination/$identifer/$datetime(parent of complete_destination)
+            // Serializeing records
+            let _ = self.record.serialize_json(&record_dir_path.join("record.json"));
+
+
+            let snapshot_root_path_binding = self.snapshot_root_path.clone().unwrap();
+            let snapshot_root_file_stem = match snapshot_root_path_binding.file_name() {
+                Some(stem) => stem,
+                _ => &OsStr::new("broken")
+            };
+
+            let _ = self.record.serialize_json(&record_dir_path.join(
+                format!("{}.json", snapshot_root_file_stem.to_str().unwrap_or("broken"))
+            ));
+
+            // Compressing and archive
             self.debug("... compressing");
-            let _ = make_tar_gz(&self.host_config.destination, 
-                Path::new(format!("{}.tar.gz", &self.host_config.destination.to_str().unwrap_or("throw")) .as_str())
+
+            let archive_compress_dest: &str = snapshot_root_path_binding.to_str().unwrap();
+            let _ = make_tar_gz(
+                self.snapshot_root_path.clone().unwrap(),
+                format!("{}.tar.gz", archive_compress_dest)
             );
             self.debug("... successs!");
 
