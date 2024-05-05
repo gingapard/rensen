@@ -95,8 +95,8 @@ pub mod rsync {
             Ok(())
         }
 
-        pub fn update_entries(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
-            if let Ok(entries) = fs::read_dir(base_path) {
+        pub fn update_entries(&mut self, dir_path: &PathBuf) -> Result<(), Trap> {
+            if let Ok(entries) = fs::read_dir(dir_path) {
                 for entry in entries {
                     let entry = match entry {
                         Ok(v) => v,

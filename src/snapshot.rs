@@ -7,30 +7,31 @@ use crate::traits::FileSerializable;
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PathBufx {
-    pub full_path: PathBuf,
-    pub base_path: PathBuf,
+    pub path: PathBuf, 
+    pub snapshot_path: PathBuf, // root path (no extension)
     pub mtime: u64,
 }
 
 impl PathBufx {
     pub fn new() -> Self {
         PathBufx {
-            full_path: PathBuf::new(),
-            base_path: PathBuf::new(),
+            path: PathBuf::new(),
+            snapshot_path: PathBuf::new(),
             mtime: u64::MIN,
         }
     }
 
-    pub fn from(full_path: PathBuf, base_path: PathBuf, mtime: u64) -> Self {
+    pub fn from(path: PathBuf, snapshot_path: PathBuf, mtime: u64) -> Self {
         PathBufx {
-            full_path,
-            base_path,
+            path,
+            snapshot_path,
             mtime,
         }
     }
 }
 
 /// Containg two pairing (equal) paths
+/// the local path (destination) and it's equivelent remote path (source)
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct PathPair {
     pub source: PathBuf,
@@ -68,8 +69,8 @@ impl Snapshot {
         }
     }
 
-    pub fn add_entry(&mut self, pathpair: PathPair, base_path: PathBuf, mtime: u64) {
-        self.entries.insert(pathpair.source, PathBufx::from(pathpair.destination, base_path, mtime));
+    pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: PathBuf, mtime: u64) {
+        self.entries.insert(pathpair.source, PathBufx::from(pathpair.destination, snapshot_path, mtime));
     }
 
     pub fn mark_as_deleted(&mut self, pair: PathPair) {
@@ -85,6 +86,7 @@ impl Snapshot {
         self.deleted_entries.remove(pair);
     }
 
+    /// returns the mtime entry matching key
     pub fn mtime(&self, key: &PathBuf) -> Option<&u64> {
         if let Some(entry) = &self.entries.get(key) {
             return Some(&entry.mtime)
@@ -95,7 +97,7 @@ impl Snapshot {
 
     pub fn path(&self, key: &PathBuf) -> Option<&PathBuf> {
         if let Some(entry) = &self.entries.get(key) {
-            return Some(&entry.full_path);
+            return Some(&entry.path);
         }
 
         None

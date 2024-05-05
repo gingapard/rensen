@@ -143,7 +143,7 @@ pub fn strip_extension(path: &mut PathBuf) {
 ///
 /// (path/to/this/file.tar.gz -> path/to/this/file)
 ///
-pub fn strip_tar_gz_extension(path: &Path) -> PathBuf {
+pub fn strip_double_extension(path: &Path) -> PathBuf {
     let mut path = path.to_path_buf();
     strip_extension(&mut path);
     strip_extension(&mut path);
@@ -154,7 +154,7 @@ pub fn strip_tar_gz_extension(path: &Path) -> PathBuf {
 #[test]
 fn test_strip_tar_gz_extension() {
     let original = PathBuf::from("path/to/certain/path.tar.gz");
-    let new = strip_tar_gz_extension(&original);
+    let new = strip_double_extension(&original);
     assert!(original == new,"{:?} - {:?}", original, new);
 }
 

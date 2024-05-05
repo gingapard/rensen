@@ -18,14 +18,14 @@ pub struct Compiler {
 impl Compiler {
 
     pub fn from(snapshot_path: PathBuf) -> Result<Self, Trap> {
-        let stripped_path = strip_tar_gz_extension(&snapshot_path); // removing the .tar.gz
+        let demake_path = strip_double_extension(&snapshot_path); // removing the .tar.gz
 
-        let _ = demake_tar_gz(&snapshot_path, &stripped_path).map_err(|err| {
+        let _ = demake_tar_gz(&snapshot_path, &demake_path).map_err(|err| {
             log_trap(Trap::FS, format!("Could not demake {:?}: {}", snapshot_path, err).as_str());
             Trap::FS
         });
 
-        let inner_record_path = &stripped_path.join(".inner.json");
+        let inner_record_path = &demake_path.join(".inner.json");
         let record = match Record::deserialize_json(inner_record_path) {
             Ok(v) => v,
             Err(err) => {
