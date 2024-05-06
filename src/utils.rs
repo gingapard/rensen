@@ -9,7 +9,7 @@ use sha3::{Digest, Sha3_256};
 use std::os::unix::fs::{PermissionsExt, MetadataExt, FileExt};
 use std::time::{SystemTime, Duration};
 use ssh2::FileStat;
-use chrono::Utc;
+use chrono::offset;
 
 use crate::logging;
 use logging::{log_trap, Trap};
@@ -17,7 +17,9 @@ use logging::{log_trap, Trap};
 use crate::traits::ConvertFromPath;
 
 pub fn get_datetime() -> String {
-  return Utc::now().format("%Y-%m-%d-%H-%M-%SZ").to_string()
+    return offset::Local::now()
+        .format("%Y-%m-%d-%H-%M-%SZ")
+        .to_string()
 }
 
 /// Sets the metadata for $file according to $stat
@@ -147,7 +149,6 @@ pub fn strip_double_extension(path: &Path) -> PathBuf {
     let mut path = path.to_path_buf();
     strip_extension(&mut path);
     strip_extension(&mut path);
-
     return path;
 }
 
