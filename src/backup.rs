@@ -133,7 +133,7 @@ pub mod rsync {
                             self.record.snapshot.undelete(&pathpair);
                         }
 
-                        self.record.snapshot.add_entry(pathpair.clone(), self.host_config.destination.clone(), mtime);
+                        self.record.snapshot.add_entry(pathpair.clone(), self.snapshot_root_path.clone().unwrap(), mtime);
                     }
                 }
             }

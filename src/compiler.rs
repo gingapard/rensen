@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::io::{self};
+use std::fs;
 
 use crate::logging::*;
 use crate::snapshot::*;
@@ -8,51 +9,58 @@ use crate::traits::FileSerializable;
 
 use crate::record::Record;
 
-/// Compiler for compiling snapshots into one,
-/// using the .inner.join record of a specific snapshot.
 pub struct Compiler {
     pub snapshot: Snapshot,
-    pub inner_path: PathBuf
 }
 
 impl Compiler {
 
-    pub fn from(snapshot_path: PathBuf) -> Result<Self, Trap> {
-        let demake_path = strip_double_extension(&snapshot_path); // removing the .tar.gz
-
-        let _ = demake_tar_gz(&snapshot_path, &demake_path).map_err(|err| {
-            log_trap(Trap::FS, format!("Could not demake {:?}: {}", snapshot_path, err).as_str());
-            Trap::FS
-        });
-
-        let inner_record_path = &demake_path.join(".inner.json");
-        let record = match Record::deserialize_json(inner_record_path) {
+    pub fn from<P>(record_path: P) -> Result<Self, Trap> 
+    where 
+        P: AsRef<Path>
+    {
+        let record = match Record::deserialize_json(record_path.as_ref()) {
             Ok(v) => v,
-            Err(err) => {
-                log_trap(Trap::FS, format!("Could not deserialize inner record: {}", err).as_str());
+            Err(e) => {
+                log_trap(Trap::FS, format!("Could not deserialize record: {}", e).as_str());
                 return Err(Trap::FS);
             }
         };
-            
 
-        Ok(Compiler { snapshot: record.snapshot, inner_path: inner_record_path.to_path_buf() })
+        Ok(Compiler { snapshot: record.snapshot })
     }
 
-    /// Compiling a snapshot according to self.snapshot
-    pub fn compile_snapshot(&self) -> Result<(), Trap> {
-        
-        for entry in self.snapshot.entries.iter() {
-            // w
+    pub fn compile(&self, destination: &Path) -> Result<(), Trap> {
+
+        // Directory at destination
+        let _ = fs::create_dir_all(destination);
+
+        for entry in &self.snapshot.entries {
+            let path = &entry.1.path;
+            let snapshot_path = &entry.1.snapshot_path;
+
+            // if a demaked version of the snapshot does not already exist
+            if !snapshot_path.exists() {
+                let _ = demake_tar_gz(
+                    format!("{}.tar.gz", entry.1.snapshot_path.as_path().to_str().unwrap()),
+                    snapshot_path
+                );  
+            }
+
+            // The complete file destination 
+            // (aka where it will collected with all other files in
+            // the recored)
+            let file_destination = replace_common_prefix(&path, &snapshot_path, &destination.to_path_buf());
+            let _ = force_copy(&path, &file_destination);
         }
 
         Ok(())
     }
-
-
 }
 
 #[cfg(test)]
 #[test]
 pub fn test_compiler() {
-    let compiler = Compiler::from("/home/dto/backups/192.168.1.47/2024-04-30-14-28-59Z.tar.gz".into());
+    let path = PathBuf::from("home/dto/backups/192.168.1.47/.records/2024-05-6-14-12-55Z.json");
+    let compiler = Compiler::from(path).unwrap();
 }

@@ -158,6 +158,38 @@ fn test_strip_tar_gz_extension() {
     assert!(original == new,"{:?} - {:?}", original, new);
 }
 
+pub fn replace_common_prefix(path1: &PathBuf, path2: &PathBuf, replacement: &PathBuf) -> PathBuf {
+    let common_prefix = path1.components()
+        .zip(path2.components())
+        .take_while(|(a, b)| a == b)
+        .map(|(a, _)| a)
+        .collect::<Vec<_>>()
+    ;
+
+    let mut new_path = PathBuf::from(replacement);
+    for component in path1.iter().skip(common_prefix.len() + 1) {
+        new_path.push(component);
+    }
+    
+    return new_path;
+}
+
+/// Wrapper for std::fs::copy which forces the write by
+/// creating missing directories
+pub fn force_copy(source: &PathBuf, destination: &PathBuf) -> io::Result<()> {
+    let mut current_path = PathBuf::new();
+    for component in destination.iter() {
+       current_path.push(component);
+       if !current_path.exists() {
+           let _ = fs::create_dir_all(current_path.clone());
+       }
+    }
+
+    let _ = fs::copy(source, destination);
+
+    Ok(())
+}
+
 #[test]
 fn test_hash() {
     let path = Path::new("src/hosts");
