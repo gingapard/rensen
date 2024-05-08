@@ -45,7 +45,6 @@ pub struct HostConfig {
     pub source: PathBuf,
     pub destination: PathBuf,
     pub frequency_hrs: Option<f32>, // default: 24.0
-    pub always_full: Option<bool>,
 }
 
 impl HostConfig {
@@ -61,7 +60,7 @@ impl HostConfig {
         source: PathBuf,
         destination: PathBuf,
         frequency_hrs: f32,
-        always_full: bool) -> Self {
+        ) -> Self {
         Self {
             user,
             identifier,
@@ -70,7 +69,6 @@ impl HostConfig {
             source,
             destination,
             frequency_hrs: Some(frequency_hrs),
-            always_full: Some(always_full),
         }
     }
 
@@ -82,7 +80,7 @@ pub struct Settings {
 
 impl Settings {
     pub fn new(hosts: Vec<HostConfig>) -> Self {
-        Self {hosts}
+        Self { hosts }  
     }
 
     pub fn verify_syntax_json(file_path: &Path) -> std::io::Result<()> {

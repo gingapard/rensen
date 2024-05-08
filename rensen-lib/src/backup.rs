@@ -124,7 +124,6 @@ pub mod rsync {
                         let source = self.into_source(&current_path)?;
                         let mtime = self.local_file_mtime(&current_path)?;
                         let pathpair = PathPair::from(source, current_path);
-                        println!("{:?}", pathpair);
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
@@ -435,9 +434,6 @@ pub mod rsync {
             // Sets metadata for the newly created file to the same as the remote file.
             let stat = self.remote_filestat(source)?;
             let _ = set_metadata(&mut file, stat);
-
-            let m_data = file.metadata();
-            println!("{:?}", m_data.unwrap().modified());
 
             Ok(())
         }

@@ -10,7 +10,7 @@ use crate::traits::FileSerializable;
 use crate::record::Record;
 
 pub struct Compiler {
-    pub snapshot: Snapshot,
+    pub source_snapshot: Snapshot,
 }
 
 impl Compiler {
@@ -27,7 +27,7 @@ impl Compiler {
             }
         };
 
-        Ok(Compiler { snapshot: record.snapshot })
+        Ok(Compiler { source_snapshot: record.snapshot })
     }
 
     /// Compiles from self.snapshot to destination
@@ -37,8 +37,8 @@ impl Compiler {
         // Directory at destination
         let _ = fs::create_dir_all(destination);
 
-        for entry in &self.snapshot.entries {
-            let file_path = &entry.1.path;
+        for entry in &self.source_snapshot.entries {
+            let file_path = &entry.1.file_path;
             let snapshot_path = &entry.1.snapshot_path;
 
             // if a demaked version of the snapshot does not already exist
@@ -62,7 +62,7 @@ impl Compiler {
     /// Looping through entries and deleting all without the .tar.gz extension
     /// which where demaked (decompressed) in self.compile
     pub fn cleanup(&self) -> Result<(), Trap> {
-        for entry in &self.snapshot.entries {
+        for entry in &self.source_snapshot.entries {
             let snapshot_path = strip_double_extension(&entry.1.snapshot_path);
             let _ = fs::remove_dir_all(snapshot_path);
         }

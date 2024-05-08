@@ -7,7 +7,7 @@ use crate::traits::FileSerializable;
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PathBufx {
-    pub path: PathBuf, 
+    pub file_path: PathBuf, 
     pub snapshot_path: PathBuf, // root path (no extension)
     pub mtime: u64,
 }
@@ -15,15 +15,15 @@ pub struct PathBufx {
 impl PathBufx {
     pub fn new() -> Self {
         PathBufx {
-            path: PathBuf::new(),
+            file_path: PathBuf::new(),
             snapshot_path: PathBuf::new(),
             mtime: u64::MIN,
         }
     }
 
-    pub fn from(path: PathBuf, snapshot_path: PathBuf, mtime: u64) -> Self {
+    pub fn from(file_path: PathBuf, snapshot_path: PathBuf, mtime: u64) -> Self {
         PathBufx {
-            path,
+            file_path,
             snapshot_path,
             mtime,
         }
@@ -97,7 +97,7 @@ impl Snapshot {
 
     pub fn path(&self, key: &PathBuf) -> Option<&PathBuf> {
         if let Some(entry) = &self.entries.get(key) {
-            return Some(&entry.path);
+            return Some(&entry.file_path);
         }
 
         None

@@ -22,7 +22,7 @@ impl Ctl {
         let mut buffer = String::new();
         io::stdin().lock().read_line(&mut buffer)?; 
 
-        Ok(buffer.split_whitespace().map(String::from).collect()) // Split input and collect into Vec<String>
+        Ok(buffer.split_whitespace().map(String::from).collect()) // Split input and collect into Vec<String> for parsing later
     }
 
 }

@@ -5,25 +5,6 @@ use crate::traits::FileSerializable;
 use std::fmt::{Display, Formatter, Result};
 use crate::snapshot::*;
 
-#[cfg(test)]
-#[test]
-fn test_serialize_record() {
-    /*
-    let mut entries: HashMap<PathBuf, PathBufx> = HashMap::new();  
-    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file1"), 123897));
-    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file2"), 123897));
-    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file3"), 123897));
-    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file4"), 123897));
-    */
-
-    let mut record = Record::new();
-    record.serialize_json(Path::new("record.json")).unwrap();
-}
-
-#[test]
-fn test_deserialize_record() {
-    let record: Record = Record::deserialize_json(Path::new("tests/record.json")).unwrap();
-}
 
 /* listened to "Plastic Love" while coding this. */
 
@@ -34,7 +15,6 @@ pub struct Record {
     pub intervals: Vec<PathBuf>,
     pub snapshot: Snapshot,
 }
-
 
 impl Record {
     pub fn new() -> Self {
@@ -103,4 +83,24 @@ impl FileSerializable for Record {
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
         Ok(record)
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_serialize_record() {
+    /*
+    let mut entries: HashMap<PathBuf, PathBufx> = HashMap::new();  
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file1"), 123897));
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file2"), 123897));
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file3"), 123897));
+    entries.insert("/home/bam/backups/file1".into(), PathBufx::from(PathBuf::from("/home/cbroo/files/file4"), 123897));
+    */
+
+    let mut record = Record::new();
+    record.serialize_json(Path::new("record.json")).unwrap();
+}
+
+#[test]
+fn test_deserialize_record() {
+    let record: Record = Record::deserialize_json(Path::new("tests/record.json")).unwrap();
 }

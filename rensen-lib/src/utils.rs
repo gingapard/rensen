@@ -99,6 +99,7 @@ fn add_dir_contents_to_tar(
     Ok(())
 }
 
+// Decompresses and dearchives .tar.gz 
 pub fn demake_tar_gz<SRC, DST>(source: SRC, destination: DST) -> io::Result<()>
 where
     SRC: AsRef<Path>,
@@ -161,16 +162,16 @@ fn test_strip_tar_gz_extension() {
 
 /// Replaces the prefix part of 
 /// path1 and path2 with somehting else
-pub fn replace_common_prefix(path1: &PathBuf, path2: &PathBuf, replacement: &PathBuf) -> PathBuf {
-    let common_prefix = path1.components()
-        .zip(path2.components())
+pub fn replace_common_prefix(one: &PathBuf, two: &PathBuf, replacement: &PathBuf) -> PathBuf {
+    let common_prefix = one.components()
+        .zip(two.components())
         .take_while(|(a, b)| a == b)
         .map(|(a, _)| a)
         .collect::<Vec<_>>()
     ;
 
     let mut new_path = PathBuf::from(replacement);
-    for component in path1.iter().skip(common_prefix.len()) {
+    for component in one.iter().skip(common_prefix.len()) {
         new_path.push(component);
     }
     
