@@ -30,7 +30,7 @@ impl Compiler {
         Ok(Compiler { snapshot: record.snapshot })
     }
 
-    pub fn compile(&self, destination: &Path) -> Result<(), Trap> {
+    pub fn compile(&mut self, destination: &Path) -> Result<(), Trap> {
 
         // Directory at destination
         let _ = fs::create_dir_all(destination);
@@ -54,6 +54,17 @@ impl Compiler {
             let _ = force_copy(&path, &file_destination);
         }
 
+        Ok(())
+    }
+
+    /// Looping through entries and deleting all without the .tar.gz extension
+    /// which where demaked (decompressed) in self.compile
+    pub fn cleanup(&self) -> Result<(), Trap> {
+        for entry in &self.snapshot.entries {
+            let snapshot_path = strip_double_extension(&entry.1.snapshot_path);
+            let _ = fs::remove_dir_all(snapshot_path);
+        }
+        
         Ok(())
     }
 }

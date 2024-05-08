@@ -23,7 +23,7 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts.yml"))?;
+    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
     /*
     let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
     entries.insert("/home/bam/backups/file1".into(), 90);
