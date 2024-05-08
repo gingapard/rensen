@@ -2,6 +2,8 @@ use log::error;
 
 #[derive(Debug)]
 pub enum Trap {
+
+    // rensen lib
     Success,
     STD,
     Connect,
@@ -13,7 +15,10 @@ pub enum Trap {
     FS,
     Config,
     Copy,
-    Missing
+    Missing,
+
+    // ctl
+    ReadInput
 }
 
 pub fn log_trap(trap: Trap, msg: &str) {
