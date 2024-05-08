@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::io::{self, SeekFrom, BufReader, BufWriter};
+use std::io::{self, SeekFrom, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::io::prelude::*;
 use flate2::{write::GzEncoder, read::GzDecoder};
@@ -159,6 +159,8 @@ fn test_strip_tar_gz_extension() {
     assert!(original == new,"{:?} - {:?}", original, new);
 }
 
+/// Replaces the prefix part of 
+/// path1 and path2 with somehting else
 pub fn replace_common_prefix(path1: &PathBuf, path2: &PathBuf, replacement: &PathBuf) -> PathBuf {
     let common_prefix = path1.components()
         .zip(path2.components())
@@ -178,15 +180,19 @@ pub fn replace_common_prefix(path1: &PathBuf, path2: &PathBuf, replacement: &Pat
 /// Wrapper for std::fs::copy which forces the write by
 /// creating missing directories
 pub fn force_copy(source: &PathBuf, destination: &PathBuf) -> io::Result<()> {
-    let mut current_path = PathBuf::new();
-    for component in destination.iter() {
-       current_path.push(component);
-       if !current_path.exists() {
-           let _ = fs::create_dir_all(current_path.clone());
-       }
+    println!("{:?}", source);
+    println!("{:?}", destination);
+
+    // Create destination directory if it doesn't exist
+    if let Some(parent_dir) = destination.parent() {
+        if !parent_dir.exists() {
+            fs::create_dir_all(parent_dir)?;
+        }
     }
 
-    let _ = fs::copy(source, destination);
+    let mut source_file = File::open(source)?;
+    let mut destination_file = File::create(destination)?;
+    io::copy(&mut source_file, &mut destination_file)?;
 
     Ok(())
 }

@@ -2,9 +2,7 @@ pub mod record;
 pub mod logging;
 pub mod compiler;
 pub mod utils;
-pub use utils::hash_file;
-pub mod backup; 
-pub mod config; 
+pub use utils::hash_file; pub mod backup; pub mod config; 
 pub mod tests;
 pub mod traits;
 pub mod snapshot;
@@ -54,12 +52,11 @@ fn main() -> Result<()> {
     let _ = host.backup();
     */
 
-    let mut compiler = compiler::Compiler::from("/home/bam/backups/192.168.1.97/.records/2024-05-08-08-35-00Z.json").unwrap();
-    println!("{}", compiler.snapshot);
+    let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
+    let mut compiler = compiler::Compiler::from(path).unwrap();
 
-    let dest = PathBuf::from("/home/bam/snapshots/");
+    let dest = PathBuf::from("/home/dto/snapshots");
     let _ = compiler.compile(dest.as_path());
-
 
     Ok(())
 }

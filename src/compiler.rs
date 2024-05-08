@@ -30,12 +30,15 @@ impl Compiler {
         Ok(Compiler { snapshot: record.snapshot })
     }
 
+    /// Compiles from self.snapshot to destination
+    /// note: destination has to be
+    /// full path (including file + extension)
     pub fn compile(&mut self, destination: &Path) -> Result<(), Trap> {
         // Directory at destination
         let _ = fs::create_dir_all(destination);
 
         for entry in &self.snapshot.entries {
-            let path = &entry.1.path;
+            let file_path = &entry.1.path;
             let snapshot_path = &entry.1.snapshot_path;
 
             // if a demaked version of the snapshot does not already exist
@@ -44,17 +47,13 @@ impl Compiler {
                     format!("{}.tar.gz", entry.1.snapshot_path.as_path().to_str().unwrap()),
                     snapshot_path
                 );  
-
-                println!("damaked");
             }
 
             // The complete file destination 
             // (aka where it will collected with all other files in
             // the recored)
-            let file_destination = replace_common_prefix(&path, &snapshot_path, &destination.to_path_buf());
-            let _ = force_copy(&path, &file_destination);
-            
-            println!("copied");
+            let file_destination = replace_common_prefix(&file_path, &snapshot_path, &destination.to_path_buf());
+            let _ = force_copy(&file_path, &file_destination);
         }
 
         Ok(())
@@ -75,9 +74,9 @@ impl Compiler {
 #[cfg(test)]
 #[test]
 pub fn test_compiler() {
-    let path = PathBuf::from("/home/bam/backups/192.168.1.97/.records/2024-05-08-08-35-00Z.json");
+    let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
     let mut compiler = Compiler::from(path).unwrap();
 
-    let dest = PathBuf::from("/home/bam/snapshots");
+    let dest = PathBuf::from("/home/dto/snapshots");
     let _ = compiler.compile(dest.as_path());
 }
