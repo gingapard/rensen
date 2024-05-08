@@ -168,7 +168,7 @@ pub fn replace_common_prefix(path1: &PathBuf, path2: &PathBuf, replacement: &Pat
     ;
 
     let mut new_path = PathBuf::from(replacement);
-    for component in path1.iter().skip(common_prefix.len() + 1) {
+    for component in path1.iter().skip(common_prefix.len()) {
         new_path.push(component);
     }
     

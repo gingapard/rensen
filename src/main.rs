@@ -23,7 +23,10 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
+    // let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
+    
+
+
     /*
     let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
     entries.insert("/home/bam/backups/file1".into(), 90);
@@ -37,6 +40,7 @@ fn main() -> Result<()> {
     */
 
 
+    /*
     let mut host_config = &mut des_hosts.hosts[0];
     let identifier = match &host_config.identifier {
         HostIdentifier::Ip(ip) => ip,
@@ -48,5 +52,14 @@ fn main() -> Result<()> {
     host.incremental = true;
     host.debug = true;
     let _ = host.backup();
+    */
+
+    let mut compiler = compiler::Compiler::from("/home/bam/backups/192.168.1.97/.records/2024-05-08-08-35-00Z.json").unwrap();
+    println!("{}", compiler.snapshot);
+
+    let dest = PathBuf::from("/home/bam/snapshots/");
+    let _ = compiler.compile(dest.as_path());
+
+
     Ok(())
 }

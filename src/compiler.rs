@@ -31,7 +31,6 @@ impl Compiler {
     }
 
     pub fn compile(&mut self, destination: &Path) -> Result<(), Trap> {
-
         // Directory at destination
         let _ = fs::create_dir_all(destination);
 
@@ -45,6 +44,8 @@ impl Compiler {
                     format!("{}.tar.gz", entry.1.snapshot_path.as_path().to_str().unwrap()),
                     snapshot_path
                 );  
+
+                println!("damaked");
             }
 
             // The complete file destination 
@@ -52,6 +53,8 @@ impl Compiler {
             // the recored)
             let file_destination = replace_common_prefix(&path, &snapshot_path, &destination.to_path_buf());
             let _ = force_copy(&path, &file_destination);
+            
+            println!("copied");
         }
 
         Ok(())
@@ -72,6 +75,9 @@ impl Compiler {
 #[cfg(test)]
 #[test]
 pub fn test_compiler() {
-    let path = PathBuf::from("home/dto/backups/192.168.1.47/.records/2024-05-6-14-12-55Z.json");
-    let compiler = Compiler::from(path).unwrap();
+    let path = PathBuf::from("/home/bam/backups/192.168.1.97/.records/2024-05-08-08-35-00Z.json");
+    let mut compiler = Compiler::from(path).unwrap();
+
+    let dest = PathBuf::from("/home/bam/snapshots");
+    let _ = compiler.compile(dest.as_path());
 }
