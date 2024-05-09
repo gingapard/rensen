@@ -7,8 +7,11 @@ use console::{Style, Term};
 use rensen_lib::logging::*;
 
 // Action
-mod action;
+pub mod action;
 use action::*;
+
+pub mod utils;
+use utils::*;
 
 struct Ctl {}
 impl Ctl {
@@ -16,11 +19,11 @@ impl Ctl {
     /// Starts the rensen-cli
     fn start(&mut self) -> Result<(), io::Error> {
 
-        println!("Rensen - v0.1, GPL-3.0\n");
+        println!("Rensen v0.1\nLicense: GPL-3.0\n");
 
         loop {
 
-            let input = self.get_input("<rensen> "); 
+            let input = get_input("<rensen> "); 
 
             let action = match self.parse_action_type(input?) {
                 Some(action) => action,
@@ -28,11 +31,12 @@ impl Ctl {
             };
 
             if action.action_type == ActionType::Exit {
+                println!("bye");
                 break;
             }
 
-            // do_action
-
+            // execute
+            let _ = action.do_action();
 
         }
         
@@ -45,10 +49,10 @@ impl Ctl {
         }
 
         let action_type = match input[0].to_lowercase().as_str() {
-            "add"    => ActionType::Add,
-            "remove" => ActionType::Remove,
+            "add"    => ActionType::AddHost,
+            "remove" => ActionType::RemoveHost,
             "show"   => ActionType::Show,
-            "run"    => ActionType::Run,
+            "run"    => ActionType::RunTask,
 
             "help"   => ActionType::Help,
 
@@ -60,18 +64,6 @@ impl Ctl {
 
         Some(Action { action_type, operands: input.iter().skip(1).cloned().collect() })
     }
-
-    /// Prints promt and stdin
-    fn get_input(&self, prompt: &str) -> Result<Vec<String>, io::Error> {
-        print!("{}", prompt);
-        io::stdout().flush()?; 
-
-        let mut buffer = String::new();
-        io::stdin().lock().read_line(&mut buffer)?; 
-
-        Ok(buffer.split_whitespace().map(String::from).collect()) // Split input and collect into Vec<String> for parsing later
-    }
-
 }
 
 fn main() {

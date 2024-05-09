@@ -47,6 +47,16 @@ pub struct HostConfig {
     pub frequency_hrs: Option<f32>, // default: 24.0
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct Host {
+    pub host: String,
+    pub config: HostConfig
+}
+
+pub struct Settings {
+    pub hosts: Vec<Host>,
+}
+
 impl HostConfig {
     /// Constructor method for HostConfig not actually
     /// a part of the program, but just for generating 
@@ -71,15 +81,11 @@ impl HostConfig {
             frequency_hrs: Some(frequency_hrs),
         }
     }
-
 }
 
-pub struct Settings {
-    pub hosts: Vec<HostConfig>,
-}
 
 impl Settings {
-    pub fn new(hosts: Vec<HostConfig>) -> Self {
+    pub fn new(hosts: Vec<Host>) -> Self {
         Self { hosts }  
     }
 
@@ -113,7 +119,7 @@ impl FileSerializable for Settings {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let hosts: Vec<HostConfig> = serde_json::from_str(&contents)?;
+        let hosts: Vec<Host> = serde_json::from_str(&contents)?;
         Ok(Self {hosts})
     }
 
@@ -135,7 +141,7 @@ impl FileSerializable for Settings {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let hosts: Vec<HostConfig> = serde_yaml::from_str(&contents)
+        let hosts: Vec<Host> = serde_yaml::from_str(&contents)
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
         Ok(Self { hosts })
     }
