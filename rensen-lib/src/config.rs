@@ -58,9 +58,6 @@ pub struct Settings {
 }
 
 impl HostConfig {
-    /// Constructor method for HostConfig not actually
-    /// a part of the program, but just for generating 
-    /// the config file in unit tests.
 
     pub fn from(
         user: String,
