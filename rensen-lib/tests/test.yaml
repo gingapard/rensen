@@ -1,20 +1,17 @@
 ---
-- host: my first host
+- hostname: my first host
   config:
     user: user2
-    identifier:
-      Ip: 192.168.1.0/24
+    identifier: 1.1.1.1
     port: 22
     key_path: ~/.ssh/testkey
     source: remote/path
     destination: dest/path
     frequency_hrs: 24.0
-
-- host: mitnik
+- hostname: mitnik
   config:
     user: user
-    identifier:
-      Ip: 192.168.1.0/24
+    identifier: 1.1.1.1
     port: 22
     key_path: ~/.ssh/testkey
     source: remote/path

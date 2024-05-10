@@ -7,8 +7,7 @@ pub mod rsync {
     use std::path::{Path, PathBuf};
     use std::ffi::OsStr;
     use crate::traits::{Rsync, FileSerializable};
-    use crate::logging::{log_trap, Trap};
-    use crate::config::*;
+    use crate::logging::{log_trap, Trap}; use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime};
     use crate::record::Record;
     use crate::snapshot::PathPair;
@@ -300,11 +299,7 @@ pub mod rsync {
         }
 
         fn connect(&mut self) -> Result<(), Trap> {
-            let identifier = match &self.host_config.identifier {
-                HostIdentifier::Ip(ip) => ip,
-                HostIdentifier::Hostname(hostname) => hostname,
-            };
-
+            let identifier = &self.host_config.identifier;
             let port = self.host_config.port.unwrap_or(22);
 
             // Connect to SSH server

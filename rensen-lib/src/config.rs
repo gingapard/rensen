@@ -12,34 +12,10 @@ use traits::FileSerializable;
 use crate::logging;
 use logging::{log_trap, Trap};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum HostIdentifier {
-    Ip(String),
-    Hostname(String),
-}
-
-impl fmt::Display for HostIdentifier {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Ip(ip) => write!(f, "IP: {}", ip),
-            Self::Hostname(hostname) => write!(f, "Hostname: {}", hostname),
-        }
-    }
-}
-
-impl AsRef<Path> for HostIdentifier {
-    fn as_ref(&self) -> &Path {
-        match self {
-            HostIdentifier::Ip(s) => Path::new(s.as_str()),
-            HostIdentifier::Hostname(s) => Path::new(s.as_str()),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct HostConfig {
     pub user: String,
-    pub identifier: HostIdentifier, // ip address or domain name
+    pub identifier: String, // ip address or domain name
     pub port: Option<u16>, // default: 22
     pub key_path: Option<PathBuf>, // default: "$HOME/.ssh/id_rsa"
     pub source: PathBuf,
@@ -49,7 +25,7 @@ pub struct HostConfig {
 
 #[derive(Serialize, Deserialize)]
 pub struct Host {
-    pub host: String,
+    pub hostname: String,
     pub config: HostConfig
 }
 
@@ -61,7 +37,7 @@ impl HostConfig {
 
     pub fn from(
         user: String,
-        identifier: HostIdentifier,
+        identifier: String,
         port: u16,
         key_path: PathBuf,
         source: PathBuf,

@@ -23,9 +23,10 @@ impl Ctl {
 
         loop {
 
-            let input = get_input("<rensen> "); 
+            // Getting immi inpit and convert to Vec<String> by splitting at whitespace
+            let input_vec: Vec<String> = get_input("<rensen> ")?.split_whitespace().map(String::from).collect();
 
-            let action = match self.parse_action_type(input?) {
+            let action = match self.parse_action_type(input_vec) {
                 Some(action) => action,
                 None => continue,
             };
@@ -36,7 +37,10 @@ impl Ctl {
             }
 
             // execute
-            let _ = action.do_action();
+            let _ = match action.execute() {
+                Ok(_) => (),
+                Err(e) => println!("{:?}", e)
+            };
 
         }
         
@@ -49,16 +53,21 @@ impl Ctl {
         }
 
         let action_type = match input[0].to_lowercase().as_str() {
-            "add"    => ActionType::AddHost,
-            "remove" => ActionType::RemoveHost,
-            "show"   => ActionType::Show,
-            "run"    => ActionType::RunTask,
+            "add"     => ActionType::AddHost,
+            "remove"  => ActionType::RemoveHost,
 
-            "help"   => ActionType::Help,
+            "list"    => ActionType::List,
+            "show"    => ActionType::List,
 
-            "exit"   => ActionType::Exit,
-            "quit"   => ActionType::Exit,
-            "q"      => ActionType::Exit,
+            "run"     => ActionType::RunBackup,
+            "compile" => ActionType::Compile,
+
+            "help"    => ActionType::Help,
+            "?"       => ActionType::Help,
+
+            "exit"    => ActionType::Exit,
+            "quit"    => ActionType::Exit,
+            "q"       => ActionType::Exit,
             _ => return None,
         };
 
