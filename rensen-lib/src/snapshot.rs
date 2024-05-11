@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use std::fmt::{Display, Result, Formatter};
-use crate::traits::FileSerializable;
 
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]

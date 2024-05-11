@@ -6,7 +6,7 @@ pub mod rsync {
     use std::time::SystemTime;
     use std::path::{Path, PathBuf};
     use std::ffi::OsStr;
-    use crate::traits::{Rsync, FileSerializable};
+    use crate::traits::*;
     use crate::logging::{log_trap, Trap}; use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime};
     use crate::record::Record;

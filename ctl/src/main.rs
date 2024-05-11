@@ -2,9 +2,12 @@
 use std::env;
 use std::io::{self, Write, BufRead};
 use console::{Style, Term};
+use std::path::{Path, PathBuf};
 
 // rensen-lib
 use rensen_lib::logging::*;
+use rensen_lib::config::GlobalConfig;
+use rensen_lib::traits::YamlFile;
 
 // Action
 pub mod action;
@@ -13,7 +16,11 @@ use action::*;
 pub mod utils;
 use utils::*;
 
-struct Ctl {}
+#[derive(Debug, Clone)]
+struct Ctl {
+    pub global_config: GlobalConfig
+}
+
 impl Ctl {
 
     /// Starts the rensen-cli
@@ -23,7 +30,7 @@ impl Ctl {
 
         loop {
 
-            // Getting immi inpit and convert to Vec<String> by splitting at whitespace
+            // Getting immi input and convert to Vec<String> by splitting at whitespace
             let input_vec: Vec<String> = get_input("<rensen> ")?.split_whitespace().map(String::from).collect();
 
             let action = match self.parse_action_type(input_vec) {
@@ -71,12 +78,15 @@ impl Ctl {
             _ => return None,
         };
 
-        Some(Action { action_type, operands: input.iter().skip(1).cloned().collect() })
+        let global_config = self.global_config.clone();
+        Some(Action { global_config, action_type, operands: input.iter().skip(1).cloned().collect() })
     }
 }
 
 fn main() {
-    let mut ctl = Ctl {};
+    let global_config_path = PathBuf::from("/etc/rensen/rensen.yml");
+    let mut ctl = Ctl { global_config: GlobalConfig::deserialize_yaml(&global_config_path).unwrap()};
+
     let term = Term::stdout();
     term.clear_screen().unwrap();
     let _ = ctl.start();

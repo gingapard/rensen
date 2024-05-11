@@ -5,7 +5,7 @@ use std::fs;
 use crate::logging::*;
 use crate::snapshot::*;
 use crate::utils::*;
-use crate::traits::FileSerializable;
+use crate::traits::JsonFile;
 
 use crate::record::Record;
 

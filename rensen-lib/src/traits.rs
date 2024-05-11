@@ -2,15 +2,18 @@ use crate::logging;
 use logging::{Trap, log_trap};
 use std::path::{Path, PathBuf};
 
-pub trait FileSerializable: Sized { 
-    /// Wrapper for serde::json
-    fn serialize_json(&self, file_path: &Path) -> std::io::Result<()>;
-    /// Wrapper for serde::json
-    fn deserialize_json(file_path: &Path) -> std::io::Result<Self>;
+pub trait YamlFile: Sized { 
     /// Wrapper for serde::yaml
     fn serialize_yaml(&self, file_path: &Path) -> std::io::Result<()>;
     /// Wrapper for serde::yaml
     fn deserialize_yaml(file_path: &Path) -> std::io::Result<Self>;
+}
+
+pub trait JsonFile: Sized {
+    /// Wrapper for serde::json
+    fn serialize_json(&self, file_path: &Path) -> std::io::Result<()>;
+    /// Wrapper for serde::json
+    fn deserialize_json(file_path: &Path) -> std::io::Result<Self>;
 }
 
 pub trait Rsync {

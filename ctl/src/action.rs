@@ -1,10 +1,10 @@
 use rensen_lib::logging::Trap;
 use rensen_lib::config::*;
-use rensen_lib::traits::FileSerializable;
+use rensen_lib::traits::YamlFile;
 
 use crate::utils::*;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(PartialEq)]
 pub enum ActionType {
@@ -21,6 +21,8 @@ pub enum ActionType {
 pub struct Action {
     pub action_type: ActionType,
     pub operands: Vec<String>,
+
+    pub global_config: GlobalConfig,
 }
 
 impl Action {
@@ -40,10 +42,10 @@ impl Action {
 
     fn add_host(&self) -> Result<(), Trap> {
 
-        let conf_path = Path::new("/etc/rensen/hosts.yml"); // TODO: put into rensen.yml conf
+        let host_config = self.global_config.hostconfig;
         
         // Global host-settings for rensen
-        let mut settings: Settings = Settings::deserialize_yaml(conf_path)
+        let mut settings: Settings = Settings::deserialize_yaml(&host_config)
             .map_err(|_| Trap::ReadInput)?;
 
         // Read addr
@@ -73,9 +75,7 @@ impl Action {
                 println!("Failed to read input");
                 return Err(Trap::ReadInput);
             }
-
         };
-        
 
         // Read key-path
         let key_path      = get_input("ssh-key: ")
@@ -115,7 +115,7 @@ impl Action {
         let hostconfig = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), frequency_hrs);
         settings.hosts.push(Host { hostname: self.operands[0].clone(), config: hostconfig  });
         
-        let _ = settings.serialize_yaml(conf_path)
+        let _ = settings.serialize_yaml(&host_config)
             .map_err(|_| Trap::FS)?;
 
         Ok(())
