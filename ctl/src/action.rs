@@ -32,10 +32,19 @@ impl Action {
             ActionType::AddHost => {
                 self.add_host()?;
             },
-            // TODO: add rest of actions.
+            ActionType::RunBackup => {
+                self.run_backup()?;
+            }
 
             _ => (),
         }
+
+        Ok(())
+    }
+
+    fn run_backup(&self) -> Result<(), Trap> {
+        let hosts_path = self.global_config.hosts_path
+
 
         Ok(())
     }
