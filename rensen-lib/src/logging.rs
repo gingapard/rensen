@@ -4,24 +4,36 @@ use log::error;
 pub enum Trap {
 
     // rensen lib
-    Success,
-    STD,
-    Connect,
-    Session,
-    Handshake,
-    KeyLoad,
-    Auth,
-    Channel,
-    FS,
-    Config,
-    Copy,
-    Missing,
+    STD(String),
+    Connect(String),
+    Session(String),
+    Handshake(String),
+    KeyLoad(String),
+    Auth(String),
+    Channel(String),
+    FS(String),
+    Config(String),
+    Copy(String),
+    Missing(String),
 
     // ctl
-    ReadInput
+    ReadInput(String)
 }
 
-pub fn log_trap(trap: Trap, msg: &str) {
-    error!("{:?}: {}", std::mem::discriminant(&trap), msg);
+pub fn log_trap(trap: Trap) {
+    match trap {
+        Trap::STD(msg) => error!("STD: {}", msg),
+        Trap::Connect(msg) => error!("Connect: {}", msg),
+        Trap::Session(msg) => error!("Session: {}", msg),
+        Trap::Handshake(msg) => error!("Handshake: {}", msg),
+        Trap::KeyLoad(msg) => error!("KeyLoad: {}", msg),
+        Trap::Auth(msg) => error!("Auth: {}", msg),
+        Trap::Channel(msg) => error!("Channel: {}", msg),
+        Trap::FS(msg) => error!("FS: {}", msg),
+        Trap::Config(msg) => error!("Config: {}", msg),
+        Trap::Copy(msg) => error!("Copy: {}", msg),
+        Trap::Missing(msg) => error!("Missing: {}", msg),
+        Trap::ReadInput(msg) => error!("ReadInput: {}", msg),
+    }
 }
 

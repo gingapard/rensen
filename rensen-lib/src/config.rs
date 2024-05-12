@@ -14,8 +14,19 @@ use logging::{log_trap, Trap};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GlobalConfig {
-    pub hostconfig: PathBuf,
-    pub log: PathBuf,
+    pub hosts_path: PathBuf,
+    pub log_path: PathBuf,
+}
+
+#[test]
+fn test_global_config_serialize() {
+    let gc = GlobalConfig {
+        hosts_path: PathBuf::from("/etc/rensen/hosts.yml"),
+        log_path: PathBuf::from("/etc/rensen/log"),
+    };
+
+    let path = PathBuf::from("gc.yml");
+    gc.serialize_yaml(&path);
 }
 
 impl YamlFile for GlobalConfig {

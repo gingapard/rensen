@@ -1,7 +1,6 @@
 use std::fs::{self, File};
 use std::io::{self, SeekFrom, BufReader, BufWriter, Read, Write};
-use std::path::{Path, PathBuf};
-use std::io::prelude::*;
+use std::path::{Path, PathBuf}; use std::io::prelude::*;
 use flate2::{write::GzEncoder, read::GzDecoder};
 use flate2::Compression;
 use tar::{Builder, Archive};
@@ -210,16 +209,14 @@ fn test_hash() {
 /// Read the next 1024 bytes from the 'pos'-th byte.
 pub fn hash_file(path: &Path, pos: u64) -> Result<String, Trap> {
     let mut file = File::open(path).map_err(|err| {
-        log_trap(Trap::FS, format!("Could not open {:?}: {}", path, err).as_str());
-        Trap::FS
+        Trap::FS(format!("Could not open {:?}: {}", path, err))
     })?;
 
     let mut sha3_256 = Sha3_256::new();
     let mut buffer = [0; 1024];
 
     file.seek(SeekFrom::Start(pos)).map_err(|err| {
-        log_trap(Trap::FS, format!("Could not seek in {:?}: {}", path, err).as_str());
-        Trap::FS
+        Trap::FS(format!("Could not seek in {:?}: {}", path, err))
     })?;
 
     match file.read(&mut buffer) {
@@ -227,8 +224,7 @@ pub fn hash_file(path: &Path, pos: u64) -> Result<String, Trap> {
             sha3_256.update(&buffer[..bytes_read]);
         }
         Err(err) => {
-            log_trap(Trap::FS, format!("Could not read from {:?}: {}", path, err).as_str());
-            return Err(Trap::FS);
+            return Err(Trap::FS(format!("Could not read from {:?}: {}", path, err)));
         }
     }
 

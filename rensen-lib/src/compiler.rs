@@ -3,9 +3,7 @@ use std::io::{self};
 use std::fs;
 
 use crate::logging::*;
-use crate::snapshot::*;
-use crate::utils::*;
-use crate::traits::JsonFile;
+use crate::snapshot::*; use crate::utils::*; use crate::traits::JsonFile;
 
 use crate::record::Record;
 
@@ -22,8 +20,7 @@ impl Compiler {
         let record = match Record::deserialize_json(record_path.as_ref()) {
             Ok(v) => v,
             Err(e) => {
-                log_trap(Trap::FS, format!("Could not deserialize record: {}", e).as_str());
-                return Err(Trap::FS);
+                return Err(Trap::FS(format!("Could not deserialize record: {}", e)));
             }
         };
 
@@ -74,7 +71,7 @@ impl Compiler {
 #[cfg(test)]
 #[test]
 pub fn test_compiler() {
-    let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
+    let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-50-30Z.json");
     let mut compiler = Compiler::from(path).unwrap();
 
     let dest = PathBuf::from("/home/dto/snapshots");

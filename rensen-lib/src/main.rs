@@ -6,7 +6,7 @@ pub use utils::hash_file; pub mod backup; pub mod config;
 pub mod tests;
 pub mod traits;
 pub mod snapshot;
-pub use traits::{Rsync, FileSerializable};
+pub use traits::{Rsync, JsonFile};
 
 use backup::rsync::*;
 

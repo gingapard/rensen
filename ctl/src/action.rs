@@ -42,19 +42,19 @@ impl Action {
 
     fn add_host(&self) -> Result<(), Trap> {
 
-        let host_config = self.global_config.hostconfig;
+        let hosts_path  = &self.global_config.hosts_path;
         
         // Global host-settings for rensen
-        let mut settings: Settings = Settings::deserialize_yaml(&host_config)
-            .map_err(|_| Trap::ReadInput)?;
+        let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?;
 
         // Read addr
         let identifier    = get_input("identifier (addr): ")
-            .map_err(|_| Trap::ReadInput)?.trim().to_string();
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
         
         // Read Username 
         let user =          get_input("user: ")
-            .map_err(|_| Trap::ReadInput)?.trim().to_string();
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read port
         let port = match get_input("port (leave empty for 22): ") {
@@ -65,29 +65,29 @@ impl Action {
                 else {
                     match input.trim().parse::<u16>() {
                         Ok(port) => port,
-                        Err(_) => {
-                            return Err(Trap::ReadInput);
+                        Err(err) => {
+                            return Err(Trap::ReadInput(format!("Could not read input: {}", err)));
                         }
                     }
                 }
             }
-            Err(_) => {
+            Err(err) => {
                 println!("Failed to read input");
-                return Err(Trap::ReadInput);
+                return Err(Trap::ReadInput(format!("Could not read input: {}", err)));
             }
         };
 
         // Read key-path
         let key_path      = get_input("ssh-key: ")
-            .map_err(|_| Trap::ReadInput)?.trim().to_string();
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read source directory
         let source        = get_input("source: ")
-            .map_err(|_| Trap::ReadInput)?.trim().to_string();
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read destination/backup directory
         let destination   = get_input("destination: ")
-            .map_err(|_| Trap::ReadInput)?.trim().to_string();
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read backup frequency
         let frequency_hrs = match get_input("backup frquency (hrs): ") {
@@ -98,15 +98,15 @@ impl Action {
                 else {
                     match input.trim().parse::<f32>() {
                         Ok(port) => port,
-                        Err(_) => {
-                            return Err(Trap::ReadInput);
+                        Err(err) => {
+                            return Err(Trap::ReadInput(format!("Could not convert to f32: {}", err)));
                         }
                     }
                 }
             }
-            Err(_) => {
+            Err(err) => {
                 println!("Failed to read input");
-                return Err(Trap::ReadInput);
+                return Err(Trap::ReadInput(format!("Could not read input: {}", err)));
             }
 
         };
@@ -115,13 +115,9 @@ impl Action {
         let hostconfig = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), frequency_hrs);
         settings.hosts.push(Host { hostname: self.operands[0].clone(), config: hostconfig  });
         
-        let _ = settings.serialize_yaml(&host_config)
-            .map_err(|_| Trap::FS)?;
+        let _ = settings.serialize_yaml(hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not serialize yaml: {}", err)))?;
 
         Ok(())
     }
 }
-
-
-
-

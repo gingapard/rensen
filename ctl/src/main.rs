@@ -1,6 +1,5 @@
 // std/other
-use std::env;
-use std::io::{self, Write, BufRead};
+use std::env; use std::io::{self, Write, BufRead};
 use console::{Style, Term};
 use std::path::{Path, PathBuf};
 
@@ -84,8 +83,14 @@ impl Ctl {
 }
 
 fn main() {
-    let global_config_path = PathBuf::from("/etc/rensen/rensen.yml");
-    let mut ctl = Ctl { global_config: GlobalConfig::deserialize_yaml(&global_config_path).unwrap()};
+    let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
+    let mut ctl = Ctl { global_config: match GlobalConfig::deserialize_yaml(&global_config_path) {
+        Ok(v) => v,
+        Err(err) => {
+            println!("{}", err);
+            return;
+        }
+    }};
 
     let term = Term::stdout();
     term.clear_screen().unwrap();

@@ -5,8 +5,7 @@ use std::fmt::{Display, Result, Formatter};
 
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PathBufx {
-    pub file_path: PathBuf, 
+pub struct PathBufx { pub file_path: PathBuf, 
     pub snapshot_path: PathBuf, // root path (no extension)
     pub mtime: u64,
 }

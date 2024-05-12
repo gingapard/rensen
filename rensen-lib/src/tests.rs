@@ -1,5 +1,5 @@
 use crate::config;
-use crate::traits::FileSerializable;
+use crate::traits::*;
 use config::Settings;
 use std::path::Path;
 
@@ -24,12 +24,6 @@ pub fn test_serialize_json() {
     let settings: Settings = Settings::new(vec![host1]);
     settings.serialize_json(path).unwrap();
     */
-}
-
-#[test]
-pub fn test_deserialize_json() {
-    let path = Path::new("tests/test.json");
-    let settings = Settings::deserialize_json(path).unwrap();
 }
 
 #[test]
