@@ -54,15 +54,15 @@ impl YamlFile for GlobalConfig {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct HostConfig {
     pub user: String,
-    pub identifier: String, // ip address or domain name
-    pub port: Option<u16>, // default: 22
-    pub key_path: Option<PathBuf>, // default: "$HOME/.ssh/id_rsa"
+    pub identifier: String,        // machine addr
+    pub port: Option<u16>,         // default: 22
+    pub key_path: Option<PathBuf>, // default: "$HOME/.ssh/ed25516"
     pub source: PathBuf,
     pub destination: PathBuf,
-    pub frequency_hrs: Option<f32>, // default: 24.0
+    pub frequency_hrs: Option<f32>, // default: 24.0 hrs
 }
 
 #[derive(Serialize, Deserialize)]

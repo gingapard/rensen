@@ -72,12 +72,9 @@ impl Action {
             .join("record.json");
         
         let record: Record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize record: {}", err))
-        )?;
+            .map_err(|err| Trap::FS("Could not deserialize record: {}", err))?;
 
         let sftp: Sftp = Sftp::new(hostconfig, record, false);
-        // TODO: check for incremrntal
-        
 
 
 

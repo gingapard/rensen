@@ -17,7 +17,8 @@ use utils::*;
 
 #[derive(Debug, Clone)]
 struct Ctl {
-    pub global_config: GlobalConfig
+    pub global_config: GlobalConfig,
+    pub term: Term
 }
 
 impl Ctl {
@@ -42,12 +43,11 @@ impl Ctl {
                 break;
             }
 
-            // execute
+            // execute the action of commnad given
             let _ = match action.execute() {
                 Ok(_) => (),
                 Err(e) => println!("{:?}", e)
             };
-
         }
         
         Ok(())
@@ -80,19 +80,29 @@ impl Ctl {
         let global_config = self.global_config.clone();
         Some(Action { global_config, action_type, operands: input.iter().skip(1).cloned().collect() })
     }
+
+    pub fn clear_screen(&self) {
+        self.term.clear_screen().unwrap();
+    }
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
-    let mut ctl = Ctl { global_config: match GlobalConfig::deserialize_yaml(&global_config_path) {
-        Ok(v) => v,
-        Err(err) => {
-            println!("{}", err);
-            return;
-        }
-    }};
+    let mut ctl = Ctl { 
+        global_config: match GlobalConfig::deserialize_yaml(&global_config_path) {
+            Ok(v) => v,
+            Err(err) => {
+                println!("{}", err);
+                return Ok(());
+            }
+        },
 
-    let term = Term::stdout();
-    term.clear_screen().unwrap();
+        term: Term::stdout()
+
+    };
+
+    ctl.clear_screen();
     let _ = ctl.start();
+
+    Ok(())
 }
