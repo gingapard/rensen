@@ -44,11 +44,10 @@ impl Ctl {
             // Checking the first index, what type of action it predicts.
             let action = match self.parse_action_type(&input_vec) {
                 Some(action) => {
-                    if action.action_type == ActionType::Empty { continue };
                     action
                 }
                 None => {
-                    println!("{:?} is not a recognized action!", input_vec);
+                    println!("{:?} is not a recognized action!", input_vec[0]);
                     continue;
                 }
             };
@@ -90,7 +89,6 @@ impl Ctl {
             "quit"    => ActionType::Exit,
             "q"       => ActionType::Exit,
             
-            ""        => ActionType::Empty,
             _ => return None,
         };
 

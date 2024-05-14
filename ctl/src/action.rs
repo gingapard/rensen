@@ -24,7 +24,6 @@ pub enum ActionType {
     List,       // (2 arg)
     Help,       // (0 arg)
     Exit,       // (0 arg)
-    Empty       // (0 arg)
 }
 
 pub struct Action {
