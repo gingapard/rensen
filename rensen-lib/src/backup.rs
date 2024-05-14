@@ -7,7 +7,8 @@ pub mod rsync {
     use std::path::{Path, PathBuf};
     use std::ffi::OsStr;
     use crate::traits::*;
-    use crate::logging::{log_trap, Trap}; use crate::config::*;
+    use crate::logging::{log_trap, Trap};
+    use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime};
     use crate::record::Record;
     use crate::snapshot::PathPair;
@@ -42,16 +43,11 @@ pub mod rsync {
             }
         }
 
-        pub fn debug(&self, s: &str) {
-            if self.debug {
-                println!("{}", s);
-            }
-        }
-
         /// Returns last_modified_time from metadata in secs (as u64)
         pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, Trap> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
-                Trap::FS(format!("Could not get metadata of local file: {}", err))
+                Trap::FS(
+                    format!("Could not get metadata of local file: {}.\nMay be missing or corrupt!", err))
             })?;
 
             let local_modified = local_metadata.modified().map_err(|err| {
@@ -68,7 +64,8 @@ pub mod rsync {
             })?;
 
             let stat = sftp.stat(remote_file).map_err(|err| {
-                Trap::FS(format!("Could not get metadata of remote file: {}", err))
+                Trap::FS(
+                    format!("Could not get metadata of remote file: {}\nMay be missing or corrupt!", err))
             })?;
 
             Ok(stat)
@@ -94,7 +91,7 @@ pub mod rsync {
                             .to_path_buf()
                     );
 
-                    println!("deleting: {:?}", pair);
+                    println!("Deleting: {:?}", pair);
                     self.record.snapshot.mark_as_deleted(pair);
                 }
             }
@@ -138,6 +135,7 @@ pub mod rsync {
         pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
             let _ = self.update_entries(base_path)?;
             let _ = self.update_deleted_entries()?;
+
             Ok(())
         }
 
@@ -195,13 +193,13 @@ pub mod rsync {
         ///
         fn backup(&mut self) -> Result<(), Trap> {
 
-            self.debug("... connecting");
+            print!("Connecting to host... ");
             self.connect()?;
-            self.debug("successs!");
+            println!("Done");
 
-            self.debug("... authenticating");
+            print!("Authenticating key... ");
             self.auth()?;
-            self.debug("successs!");
+            println!("Done");
 
             let datetime = get_datetime();
             let source = &self.host_config.source;
@@ -221,23 +219,25 @@ pub mod rsync {
                 Some(self.snapshot_root_path.clone().unwrap().join(format!("{}", self.host_config.identifier)))
             };
 
-            self.debug("... copying files");
+            println!("Copying remote files...");
             self.copy_remote_directory(&source, &self.complete_destination.clone().unwrap())?;
-            self.debug("... successs!");
+            println!("Successfully copied remote files!");
 
-            self.debug("... updating records");
+            print!("Updating records... ");
             self.update_record(&mut self.snapshot_root_path.clone().unwrap())?;
-            self.debug("... successs!");
+            println!("Done");
 
             // $HOME/destination/$identifier/.records
             let record_dir_path = self.host_root_path.clone().unwrap()
                 .join(".records");
 
+            print!("Adding records... ");
             if !record_dir_path.exists() {
                 fs::create_dir_all(&record_dir_path).map_err(|err| {
                     Trap::FS(format!("Could not create directory: {}", err))
                 })?;
             }
+
 
             // Serializeing records
             let _ = self.record.serialize_json(&record_dir_path.join("record.json"));
@@ -253,15 +253,20 @@ pub mod rsync {
                 format!("{}.json", snapshot_root_file_stem.to_str().unwrap_or("broken"))
             ));
 
-            // Compressing and archive
-            self.debug("... compressing");
+            println!("Done");
 
+            // Compressing and archive
+            print!("Archiving... ");
             let archive_compress_dest: &str = snapshot_root_path_binding.to_str().unwrap();
+            println!("Done");
+
+            print!("Compressing... ");
             let _ = make_tar_gz(
                 self.snapshot_root_path.clone().unwrap(),
                 format!("{}.tar.gz", archive_compress_dest)
             );
-            self.debug("... successs!");
+            
+            println!("Done");
 
             Ok(())
         }
@@ -280,7 +285,10 @@ pub mod rsync {
             match self.sess.as_ref() {
                 Some(session) => {
                     if let Err(err) = session.userauth_pubkey_file(&self.host_config.user, None, private_key_path, None) {
-                        return Err(Trap::Auth(format!("Could not Authenticate session: {}", err)));
+                        return Err(Trap::Auth(
+                                format!("Could not Authenticate session: {}\nMake sur ethe ssh-key is at hosts specified key-path", err)
+                                )
+                        );
                     }
                 },
                 None => {
@@ -297,7 +305,7 @@ pub mod rsync {
 
             // Connect to SSH server
             let tcp = TcpStream::connect(format!("{}:{}", identifier, port)).map_err(|err| {
-                Trap::Connect(format!("Could not connect to host: {}", err))
+                Trap::Connect(format!("Could not connect to host: {}\nHost unreachable!", err))
 
             })?;
 
@@ -358,7 +366,7 @@ pub mod rsync {
                 else if stat.is_dir() {
                     let destination_subdir = destination.join(&entryname);
                     fs::create_dir_all(&destination_subdir).map_err(|err| {
-                        Trap::FS(format!("Could not create directory: {}", err))
+                        Trap::FS(format!("Could not create directory: {}\nCheck permissions!", err))
                     })?;
 
                     self.copy_remote_directory(&new_source, &new_destination)?;
@@ -376,9 +384,7 @@ pub mod rsync {
 
                 let dest_as_source = self.into_source(destination)?;
                 if remote_mtime <= self.record.snapshot.mtime(&dest_as_source).unwrap_or(&0) {
-                    if self.debug {
-                        self.debug(format!("skipping: {:?}", source).as_str());
-                    }
+                    println!("Skipping: {:?}", source);
                     return Ok(());
                 }
             }
@@ -393,9 +399,10 @@ pub mod rsync {
             })?;
 
             let mut file = fs::File::create(destination).map_err(|err| {
-                Trap::FS(format!("Could not create file: {}", err))
+                Trap::FS(format!("Could not create file: {}\nCheck permissions!", err))
             })?;
 
+            print!("Copying: {:?} > > > {:?}...", source, destination);
             let mut buffer = [0; 4096];
             loop {
                 match channel.read(&mut buffer) {
@@ -411,10 +418,13 @@ pub mod rsync {
                     }
                 }
             }
+            println!("Done");
 
             // Sets metadata for the newly created file to the same as the remote file.
+            print!("Copying metadata... ");            
             let stat = self.remote_filestat(source)?;
             let _ = set_metadata(&mut file, stat);
+            println!("Done");
 
             Ok(())
         }

@@ -1,6 +1,6 @@
 // std/other
 use std::env; use std::io::{self, Write, BufRead};
-use console::{Style, Term};
+use console::Term;
 use std::path::{Path, PathBuf};
 
 // rensen-lib
@@ -30,16 +30,25 @@ impl Ctl {
 
         loop {
 
-            // Getting immi input and convert to Vec<String> by splitting at whitespace
-            let input_vec: Vec<String> = get_input("<rensen> ")?.split_whitespace().map(String::from).collect();
+            let input = match get_input("<rensen> ") {
+                Ok(input) => {
+                    if input.len() < 2 { continue };
+                    input
+                },
+                Err(err) => return Err(err)
+            };
 
+            // convert to Vec<String> by splitting at whitespace
+            let input_vec: Vec<String> = input.split_whitespace().map(String::from).collect();
+
+            // Checking the first index, what type of action it predicts.
             let action = match self.parse_action_type(&input_vec) {
                 Some(action) => {
                     if action.action_type == ActionType::Empty { continue };
                     action
                 }
                 None => {
-                    println!("{} is not a recognized action!", input_vec[0]);
+                    println!("{:?} is not a recognized action!", input_vec);
                     continue;
                 }
             };

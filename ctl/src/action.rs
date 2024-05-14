@@ -83,11 +83,11 @@ impl Action {
             "inc"         => BackupMethod::Incremental,
             "incremental" => BackupMethod::Incremental,
             "full"        => BackupMethod::Full,
-            _             => return Err(Trap::InvalidInput(format!("Invalid input: {}", self.operands[1])))
+                        _ => return Err(Trap::InvalidInput(format!("Invalid input: {}", self.operands[1])))
         };
 
         if method == BackupMethod::Incremental {
-            sftp.incremental == true;
+            sftp.incremental = true;
         }
 
         let _ = sftp.backup()?;
@@ -97,7 +97,7 @@ impl Action {
 
     fn add_host(&self) -> Result<(), Trap> {
 
-        let hosts_path  = &self.global_config.hosts_path;
+        let hosts_path = &self.global_config.hosts_path;
         
         // Global host-settings for rensen
         let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
