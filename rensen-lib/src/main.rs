@@ -6,7 +6,7 @@ pub use utils::hash_file; pub mod backup; pub mod config;
 pub mod tests;
 pub mod traits;
 pub mod snapshot;
-pub use traits::{Rsync, JsonFile};
+pub use traits::{Rsync, JsonFile, YamlFile};
 
 use backup::rsync::*;
 
@@ -21,7 +21,7 @@ use env_logger;
 fn main() -> Result<()> {
     env_logger::init();
 
-    // let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
+    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
     
 
 
@@ -37,26 +37,26 @@ fn main() -> Result<()> {
     record.serialize_json(Path::new("record.json")).unwrap();
     */
 
+    let mut config = &mut des_hosts.hosts[0].config;
+    let identifier = String::from("192.168.1.97");
 
-    /*
-    let mut host_config = &mut des_hosts.hosts[0];
-    let identifier = match &host_config.identifier {
-        HostIdentifier::Ip(ip) => ip,
-        HostIdentifier::Hostname(hostname) => hostname,
+    let record = match Record::deserialize_json(&config.destination.join(identifier).join(".records").join("record.json")) {
+        Ok(record) => record,
+        _ => Record::new()
     };
 
-    let record = Record::deserialize_json(&host_config.destination.join(identifier).join(".records").join("record.json"));
-    let mut host = Sftp::new(&mut host_config, record.unwrap(), false);
+    let mut host = Sftp::new(&mut config, record, false);
     host.incremental = true;
     host.debug = true;
     let _ = host.backup();
-    */
 
+    /*
     let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
     let mut compiler = compiler::Compiler::from(path).unwrap();
 
     let dest = PathBuf::from("/home/dto/snapshots");
     let _ = compiler.compile(dest.as_path());
+    */
 
     Ok(())
 }

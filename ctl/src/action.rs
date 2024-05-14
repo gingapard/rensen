@@ -1,6 +1,6 @@
 use rensen_lib::logging::Trap;
 use rensen_lib::config::*;
-use rensen_lib::traits::{YamlFile, JsonFile};
+use rensen_lib::traits::{YamlFile, JsonFile, Rsync};
 use rensen_lib::backup::rsync::Sftp;
 use rensen_lib::record::Record;
 
@@ -8,7 +8,8 @@ use crate::utils::*;
 
 use std::path::PathBuf;
 
-pub enum Method {
+#[derive(PartialEq)]
+pub enum BackupMethod {
     Full,
     Incremental,
 }
@@ -23,6 +24,7 @@ pub enum ActionType {
     List,       // (2 arg)
     Help,       // (0 arg)
     Exit,       // (0 arg)
+    Empty       // (0 arg)
 }
 
 pub struct Action {
@@ -52,35 +54,43 @@ impl Action {
     fn run_backup(&self) -> Result<(), Trap> {
         let hosts_path = &self.global_config.hosts_path;
         let hostname = &self.operands[0];
-        let method = &self.operands[1];
 
         // Opening the settings file for all hosts
         let settings: Settings = Settings::deserialize_yaml(hosts_path)
             .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
 
-        let host_config: HostConfig;
-        for host in settings.hosts.iter() {
-            if host.hostname == hostname.to_owned() {
-                host_config = host.config.clone();
+        let mut host_config: Option<HostConfig> = None;
+        for host in settings.hosts {
+            if hostname.to_owned() == host.hostname.to_owned() {
+                host_config = Some(host.config);
                 break;
             }
         }
 
+        let mut host_config: HostConfig = host_config.unwrap();
         let record_path = host_config.destination
-            .join(host_config.identifier)
+            .join(&host_config.identifier)
             .join(".records")
-            .join("record.json");
+            .join("record.json")
+        ;
         
         let record: Record = Record::deserialize_json(&record_path)
             .map_err(|err| Trap::FS(format!("Could not deserialize record: {}", err))
         )?;
 
-        let sftp: Sftp = Sftp::new(hostconfig, record, false);
-        // TODO: check for incremrntal
-        
+        let mut sftp: Sftp = Sftp::new(&mut host_config, record, false);
+        let method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
+            "inc"         => BackupMethod::Incremental,
+            "incremental" => BackupMethod::Incremental,
+            "full"        => BackupMethod::Full,
+            _             => return Err(Trap::InvalidInput(format!("Invalid input: {}", self.operands[1])))
+        };
 
+        if method == BackupMethod::Incremental {
+            sftp.incremental == true;
+        }
 
-
+        let _ = sftp.backup()?;
 
         Ok(())
     }

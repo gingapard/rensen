@@ -33,9 +33,15 @@ impl Ctl {
             // Getting immi input and convert to Vec<String> by splitting at whitespace
             let input_vec: Vec<String> = get_input("<rensen> ")?.split_whitespace().map(String::from).collect();
 
-            let action = match self.parse_action_type(input_vec) {
-                Some(action) => action,
-                None => continue,
+            let action = match self.parse_action_type(&input_vec) {
+                Some(action) => {
+                    if action.action_type == ActionType::Empty { continue };
+                    action
+                }
+                None => {
+                    println!("{} is not a recognized action!", input_vec[0]);
+                    continue;
+                }
             };
 
             if action.action_type == ActionType::Exit {
@@ -53,7 +59,7 @@ impl Ctl {
         Ok(())
     }
 
-    fn parse_action_type(&self, input: Vec<String>) -> Option<Action> {
+    fn parse_action_type(&self, input: &Vec<String>) -> Option<Action> {
         if input.is_empty() {
             return None;
         }
@@ -74,6 +80,8 @@ impl Ctl {
             "exit"    => ActionType::Exit,
             "quit"    => ActionType::Exit,
             "q"       => ActionType::Exit,
+            
+            ""        => ActionType::Empty,
             _ => return None,
         };
 
