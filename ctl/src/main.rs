@@ -84,6 +84,7 @@ impl Ctl {
 
             "help"    => ActionType::Help,
             "?"       => ActionType::Help,
+            "h"       => ActionType::Help,
 
             "exit"    => ActionType::Exit,
             "quit"    => ActionType::Exit,

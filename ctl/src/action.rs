@@ -43,6 +43,9 @@ impl Action {
             ActionType::RunBackup => {
                 self.run_backup()?;
             }
+            ActionType::Help => {
+                self.print_help();
+            }
 
             _ => (),
         }
@@ -66,6 +69,7 @@ impl Action {
             }
         }
 
+
         let mut host_config: HostConfig = host_config.unwrap();
         let record_path = host_config.destination
             .join(&host_config.identifier)
@@ -73,23 +77,24 @@ impl Action {
             .join("record.json")
         ;
         
-        let record: Record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize record: {}", err))
-        )?;
+        // des rec, init sftp, check meth, run
+        let record = Record::deserialize_json(&record_path)
+            .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
 
-        let mut sftp: Sftp = Sftp::new(&mut host_config, record, false);
-        let method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
+        let mut sftp = Sftp::new(&mut host_config, record, false);
+        
+        let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
             "inc"         => BackupMethod::Incremental,
             "incremental" => BackupMethod::Incremental,
             "full"        => BackupMethod::Full,
-                        _ => return Err(Trap::InvalidInput(format!("Invalid input: {}", self.operands[1])))
+            _             => return Err(Trap::InvalidInput("Invalid input".to_string()))
         };
 
-        if method == BackupMethod::Incremental {
+        if backup_method == BackupMethod::Incremental {
             sftp.incremental = true;
         }
 
-        let _ = sftp.backup()?;
+        sftp.backup()?;
 
         Ok(())
     }
@@ -180,5 +185,10 @@ impl Action {
             .map_err(|err| Trap::FS(format!("Could not serialize yaml: {}", err)))?;
 
         Ok(())
+    }
+
+    fn print_help(&self) {
+        println!("add <name/hostname>                          adds host config.");
+        println!("run <name/hostname> <method (inc, full)>     runs backups"); 
     }
 }

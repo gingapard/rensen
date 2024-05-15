@@ -68,12 +68,13 @@ impl Compiler {
     }
 }
 
-#[cfg(test)]
+// TODO: Test compiler
 #[test]
-pub fn test_compiler() {
-    let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-50-30Z.json");
-    let mut compiler = Compiler::from(path).unwrap();
+fn test_compiler() {
+    let path = Path::new("/home/bam/backups/192.168.1.97/.records/2024-05-15-08-10-30Z.json");
+    let mut compiler = Compiler::from(&path).unwrap();
 
-    let dest = PathBuf::from("/home/dto/snapshots");
-    let _ = compiler.compile(dest.as_path());
+    let snapshot_path = Path::new("home/bam/snapshots");
+    compiler.compile(snapshot_path).unwrap();
+
 }
