@@ -77,7 +77,6 @@ impl Action {
             .join("record.json")
         ;
         
-        // des rec, init sftp, check meth, run
         let record = Record::deserialize_json(&record_path)
             .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
 
@@ -86,8 +85,10 @@ impl Action {
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
             "inc"         => BackupMethod::Incremental,
             "incremental" => BackupMethod::Incremental,
+
             "full"        => BackupMethod::Full,
-            _             => return Err(Trap::InvalidInput("Invalid input".to_string()))
+
+            _             => return Err(Trap::InvalidInput(String::from("Invalid input")))
         };
 
         if backup_method == BackupMethod::Incremental {
@@ -108,11 +109,11 @@ impl Action {
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?;
 
         // Read addr
-        let identifier    = get_input("addr: ")
+        let identifier = get_input("addr: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
         
         // Read Username 
-        let user =          get_input("user: ")
+        let user = get_input("user: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read port
@@ -139,17 +140,17 @@ impl Action {
         };
 
         // Read key-path
-        let key_path      = get_input("ssh-key: ")
+        let key_path = get_input("ssh-key: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
         // Read source directory
-        let source        = get_input("source: ")
+        let source = get_input("source: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
         // Read destination/backup directory
-        let destination   = get_input("destination: ")
+        let destination = get_input("destination: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 

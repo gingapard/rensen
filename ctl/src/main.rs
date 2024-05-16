@@ -47,7 +47,7 @@ impl Ctl {
                     action
                 }
                 None => {
-                    println!("{:?} is not a recognized action!", input_vec[0]);
+                    println!("`{}` is not a recognized action!", input_vec[0]);
                     continue;
                 }
             };
