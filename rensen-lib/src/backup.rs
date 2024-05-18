@@ -15,6 +15,7 @@ pub mod rsync {
 
     pub struct Sftp<'a> {
         pub host_config: &'a mut HostConfig,
+        pub global_config: &'a GlobalConfig,
         pub record: Record,
         pub sess: Option<Session>,
 
@@ -28,9 +29,10 @@ pub mod rsync {
     }
 
     impl<'a> Sftp<'a> {
-        pub fn new(host_config: &'a mut HostConfig, record: Record, debug: bool) -> Self {
+        pub fn new(host_config: &'a mut HostConfig, global_config: &'a GlobalConfig, record: Record, debug: bool) -> Self {
             Self {
                 host_config,
+                global_config,
                 record,
                 sess: None,
 
@@ -205,7 +207,7 @@ pub mod rsync {
             let source = &self.host_config.source;
 
             // $HOME/destination/$identifier
-            self.host_root_path = Some(self.host_config.destination
+            self.host_root_path = Some(self.global_config.backupping_path
                 .join(&self.host_config.identifier));
 
             // $HOME/destination/$identifier/$datetime
@@ -237,7 +239,6 @@ pub mod rsync {
                     Trap::FS(format!("Could not create directory: {}", err))
                 })?;
             }
-
 
             // Serializeing records
             let _ = self.record.serialize_json(&record_dir_path.join("record.json"));

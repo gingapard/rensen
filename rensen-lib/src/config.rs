@@ -15,6 +15,7 @@ use logging::{log_trap, Trap};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GlobalConfig {
     pub hosts_path: PathBuf,
+    pub backupping_path: PathBuf,
     pub log_path: PathBuf,
 }
 
@@ -22,6 +23,7 @@ pub struct GlobalConfig {
 fn test_global_config_serialize() {
     let gc = GlobalConfig {
         hosts_path: PathBuf::from("/etc/rensen/hosts.yml"),
+        backupping_path: PathBuf::from("/home/dto/bakcups/"),
         log_path: PathBuf::from("/etc/rensen/log"),
     };
 

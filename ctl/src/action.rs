@@ -80,7 +80,7 @@ impl Action {
         let record = Record::deserialize_json(&record_path)
             .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
 
-        let mut sftp = Sftp::new(&mut host_config, record, false);
+        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
         
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
             "inc"         => BackupMethod::Incremental,
@@ -189,7 +189,7 @@ impl Action {
     }
 
     fn print_help(&self) {
-        println!("add <name/hostname>                          adds host config.");
-        println!("run <name/hostname> <method (inc, full)>     runs backups"); 
+        println!("add <name/hostname>                          adds host config");
+        println!("run <name/hostname> <inc/full>               runs backups"); 
     }
 }

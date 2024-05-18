@@ -23,9 +23,9 @@ impl Compiler {
             }
         };
 
-        let mut record_path = record_path;
+        let mut record_path = record_path.clone();
         strip_extension(&mut record_path);
-        Ok(Compiler { source_snapshot_path: record_path, source_snapshot: record.snapshot })
+        Ok(Compiler { source_snapshot_path: record_path.to_path_buf(), source_snapshot: record.snapshot })
     } 
 
     /// Compiles from self.snapshot to destination
