@@ -76,8 +76,8 @@ impl Ctl {
             "add"     => ActionType::AddHost,
             "remove"  => ActionType::RemoveHost,
 
-            "list"    => ActionType::List,
-            "show"    => ActionType::List,
+            "browse"  => ActionType::Browse,
+            "show"    => ActionType::Browse,
 
             "run"     => ActionType::RunBackup,
             "compile" => ActionType::Compile,

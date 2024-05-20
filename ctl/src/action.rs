@@ -21,7 +21,7 @@ pub enum ActionType {
     ModifyHost, // (1 arg)
     RunBackup,  // (2 arg)
     Compile,    // (2 arg)
-    List,       // (2 arg)
+    Browse,     // (1 arg)
     Help,       // (0 arg)
     Exit,       // (0 arg)
 }
@@ -37,13 +37,16 @@ impl Action {
     pub fn execute(&self) -> Result<(), Trap> {
 
         match self.action_type {
-            ActionType::AddHost => {
+            ActionType::AddHost   => {
                 self.add_host()?;
             },
             ActionType::RunBackup => {
                 self.run_backup()?;
             }
-            ActionType::Help => {
+            ActionType::Browse    => {
+                self.browse_backup()?;
+            },
+            ActionType::Help      => {
                 self.print_help();
             }
 
@@ -53,7 +56,57 @@ impl Action {
         Ok(())
     }
 
+    fn browse_backup(&self) -> Result<(), Trap> {
+        if self.operands.len() != 1 {
+            return Err(
+                Trap::InvalidInput(
+                    String::from("Invalid arguments for action. Use `help` for more details")
+                )
+            );
+        }
+
+        let hosts_path = &self.global_config.hosts_path;
+        let hostname = &self.operands[0];
+
+        let settings: Settings = Settings::deserialize_yaml(hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+
+        let host_config = match self.get_config(&hostname, &settings) {
+            Some(config) => config,
+            None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
+        };
+
+        // TODO: Recurs dir and show backupped
+
+
+
+
+        Ok(())
+    }
+
+    /// Returning the full HostConfig based on hostname associated in Settings
+    fn get_config(&self, hostname: &String, settings: &Settings) -> Option<HostConfig> {
+        let mut host_config: Option<HostConfig> = None;
+
+        for host in &settings.hosts {
+            if hostname.to_owned() == host.hostname.to_owned() {
+                host_config = Some(host.config.clone());
+                break;
+            }
+        }
+
+        host_config
+    }
+
     fn run_backup(&self) -> Result<(), Trap> {
+        if self.operands.len() != 2 {
+            return Err(
+                Trap::InvalidInput(
+                    String::from("Invalid arguments for action. Use `help` for more details")
+                )
+            );
+        }
+
         let hosts_path = &self.global_config.hosts_path;
         let hostname = &self.operands[0];
 
