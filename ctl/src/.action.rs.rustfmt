@@ -3,7 +3,6 @@ use rensen_lib::config::*;
 use rensen_lib::traits::{YamlFile, JsonFile, Rsync};
 use rensen_lib::backup::rsync::Sftp;
 use rensen_lib::record::Record;
-use rensen_lib::compiler::Compiler;
 
 use crate::utils::*;
 
@@ -46,10 +45,7 @@ impl Action {
             },
             ActionType::RunBackup => {
                 self.run_backup()?;
-            },
-            ActionType::Compile   => {
-                self.compile_snapshot()?;
-            },
+            }
             ActionType::Browse    => {
                 self.browse_backup()?;
             },
@@ -59,43 +55,6 @@ impl Action {
 
             _ => (),
         }
-
-        Ok(())
-    }
-
-    fn compile_snapshot(&self) -> Result<(), Trap> {
-        if self.operands.len() != 1 {
-            return Err(
-                Trap::InvalidInput(
-                    String::from("Invalid arguments for action. Use `help` for more details")
-                )
-            );
-        }
-
-        let hosts_path = &self.global_config.hosts_path;
-        let hostname = &self.operands[0];
-
-        let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
-
-        let host_config = match settings.associated_config(&hostname) {
-            Some(config) => config,
-            None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
-        };
-
-        let snapshot = get_input("Snapshot: ")
-            .map_err(|err| Trap::InvalidInput(format!("Could not read input: {:?}", err)))?;
-
-        let snapshot_record_path = self.global_config.backupping_path
-            .join(host_config.identifier)
-            .join(".records")
-            .join(snapshot)
-        ;
-
-        /* Compiling snapshot */
-        let mut compiler = Compiler::from(&snapshot_record_path)?;
-        compiler.compile(&self.global_config.snapshots_path)?;
-        let _ = compiler.cleanup();
 
         Ok(())
     }
@@ -130,29 +89,20 @@ impl Action {
         let entries = match fs::read_dir(&dir_path) {
             Ok(entries) => entries,
             Err(err) => return Err(Trap::FS(
-                format!("Could not read directory at: `{:?}`: {}", dir_path, err)))
+                    format!("Could not read directory at: {:?}: {}", dir_path, err)))
         };
 
-
         let style = console::Style::new();
-        println!("{}\n", style.clone().bold().apply_to("Snapshots: "));
+        println!("{}", style.bold().apply_to("Snapshots: "));
 
-        for entry in entries {
-
-            let entry = entry.unwrap();
-            if let Some(file_stem) = entry.path().file_stem() {
-
-                // Filtering out the record.json file
-                if file_stem != "record" {
-                    println!("\t{}", style.clone().bold().blue().apply_to(file_stem.to_str().unwrap()));
-                }
+            for entry in entries {
+                let path = entry.unwrap().path();
+                println!("\t{:?}", path);
             }
-
-        }
-        println!();
 
         Ok(())
     }
+
 
     fn run_backup(&self) -> Result<(), Trap> {
         if self.operands.len() != 2 {

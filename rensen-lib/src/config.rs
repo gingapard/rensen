@@ -16,6 +16,7 @@ use logging::{log_trap, Trap};
 pub struct GlobalConfig {
     pub hosts_path: PathBuf,
     pub backupping_path: PathBuf,
+    pub snapshots_path: PathBuf,
     pub log_path: PathBuf,
 }
 
@@ -24,6 +25,7 @@ fn test_global_config_serialize() {
     let gc = GlobalConfig {
         hosts_path: PathBuf::from("/etc/rensen/hosts.yml"),
         backupping_path: PathBuf::from("/home/dto/bakcups/"),
+        snapshots_path: PathBuf::from("/etc/rensen/hosts.yml"),
         log_path: PathBuf::from("/etc/rensen/log"),
     };
 
@@ -100,7 +102,6 @@ impl HostConfig {
     }
 }
 
-
 impl Settings {
     pub fn new(hosts: Vec<Host>) -> Self {
         Self { hosts }  
@@ -120,8 +121,17 @@ impl Settings {
         Ok(())
     }
 
+    pub fn associated_config(&self, hostname: &String) -> Option<HostConfig> {
+        let mut host_config: Option<HostConfig> = None;
+        for host in &self.hosts {
+            if hostname.to_owned() == host.hostname.to_owned() {
+                host_config = Some(host.config.clone());
+                break;
+            }
+        }
 
-    
+        host_config
+    }
 }
 
 impl YamlFile for Settings {
