@@ -7,6 +7,7 @@ use rensen_lib::record::Record;
 use crate::utils::*;
 
 use std::path::PathBuf;
+use std::fs;
 
 #[derive(PartialEq)]
 pub enum BackupMethod {
@@ -76,10 +77,14 @@ impl Action {
             None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
         };
 
-        // TODO: Recurs dir and show backupped
+        let dir_path = self.global_config.backupping_path.join(host_config.identifier);
 
-
-
+        if let Ok(entries) = fs::read_dir(dir_path) {
+            for entry in entries {
+                let path = entry.unwrap().path();
+                println!("{:?}", path);
+            }
+        }
 
         Ok(())
     }
