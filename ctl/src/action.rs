@@ -5,6 +5,8 @@ use rensen_lib::backup::rsync::Sftp;
 use rensen_lib::record::Record;
 use rensen_lib::compiler::Compiler;
 
+use console::Style;
+
 use crate::utils::*;
 
 use std::path::PathBuf;
@@ -227,6 +229,18 @@ impl Action {
         Ok(())
     }
 
+    fn list(&self) -> Result<(), Trap> {
+        if self.operands.len() != 2 {
+            return Err(
+                Trap::InvalidInput(
+                    String::from("Invalid arguments for action. Use `help` for more details")
+                )
+            );
+        }
+
+        Ok(())
+    }
+
     fn list_snapshots(&self) -> Result<(), Trap> {
         if self.operands.len() != 1 {
             return Err(
@@ -318,9 +332,7 @@ impl Action {
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
             "inc"         => BackupMethod::Incremental,
             "incremental" => BackupMethod::Incremental,
-
             "full"        => BackupMethod::Full,
-
             _             => return Err(Trap::InvalidInput(String::from("Invalid input")))
         };
 
@@ -333,17 +345,39 @@ impl Action {
         Ok(())
     }
 
-
     pub fn print_help(&self) {
-        println!("h, ?, help                          Show this.");
-        println!("q, quit, exit                       Quits ctl.");
-        println!();
+        let style = Style::new();
 
-        println!("a, add <hostname>                   Enters host-adding interface.");
-        println!("d, del <hostname>                   Deletes host config.");
-        println!("m, modify <hostname>                Enters modification interface.");
-        println!("r, run <hostname> <inc, full>       Runs backup for host based on what is specified in config."); 
-        println!("l, list <hostname>                  Lists snapshots taken of host.");
+        if self.operands.len() > 0 {
+            match self.operands[0].to_lowercase().as_str() {
+                "add"     => {
+                    println!("a, add <hostname>     Enters host-adding interface.");
+                    println!(
+                        "Enters the host-adding interface where you are able to specify information about\nthen host which is going to be backupped.\n\n{} Remember to have a ssh-key generated in the path you specify, and also have thepublic key on the host machine.",
+                    style.bold().red().apply_to("Note:"));
+                },
+                "del"     => {
+                    println!("d, del <hostname>     Deletes host config.");
+                    println!("Deletes the specified host's config from the configuration file located at probably in /etc/rensen or has specified path in /etc/rensen/rensen_config");
+                },
+                "modify"  => (),
+                "run"     => (),
+                "list"    => (),
+                "compile" => (),
+                _ => (),
+            }
+
+            return;
+        }
+
+        println!("h, ?, help                          Show this info.");
+        println!("q, quit, exit                       Quits ctl.\n");
+
+        println!("a,     add <hostname>               Enters host-adding interface.");
+        println!("d,     del <hostname>               Deletes host config.");
+        println!("m,  modify <hostname>               Enters modification interface.");
+        println!("r,     run <hostname> <inc, full>   Runs backup for host based on what is specified in config."); 
+        println!("l,    list <hostname>               Lists snapshots taken of host.");
         println!("c, compile <hostname>               Starts compilation interface.");
     }
 }
