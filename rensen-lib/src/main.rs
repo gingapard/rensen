@@ -37,6 +37,7 @@ fn main() -> Result<()> {
     record.serialize_json(Path::new("record.json")).unwrap();
     */
 
+    /*
     let mut config = &mut des_hosts.hosts[0].config;
     let identifier = String::from("192.168.1.97");
 
@@ -49,14 +50,13 @@ fn main() -> Result<()> {
     host.incremental = true;
     host.debug = true;
     let _ = host.backup();
+    */
 
-    /*
-    let path = PathBuf::from("/home/dto/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
-    let mut compiler = compiler::Compiler::from(path).unwrap();
+    let path = PathBuf::from("/home/bam/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
+    let mut compiler = compiler::Compiler::from(&path).unwrap();
 
     let dest = PathBuf::from("/home/dto/snapshots");
     let _ = compiler.compile(dest.as_path());
-    */
 
     Ok(())
 }

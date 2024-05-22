@@ -89,7 +89,7 @@ impl Action {
         let snapshot_record_path = self.global_config.backupping_path
             .join(host_config.identifier)
             .join(".records")
-            .join(snapshot)
+            .join(format!("{}.json", snapshot.trim()))
         ;
 
         /* Compiling snapshot */
@@ -144,7 +144,7 @@ impl Action {
 
                 // Filtering out the record.json file
                 if file_stem != "record" {
-                    println!("\t{}", style.clone().bold().blue().apply_to(file_stem.to_str().unwrap()));
+                    println!("->  {}", style.clone().bold().blue().apply_to(file_stem.to_str().unwrap()));
                 }
             }
 

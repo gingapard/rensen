@@ -17,9 +17,9 @@ impl Compiler {
 
     pub fn from(record_path: &PathBuf) -> Result<Self, Trap> {
         let record = match Record::deserialize_json(record_path.as_ref()) {
-            Ok(v) => v,
-            Err(e) => {
-                return Err(Trap::FS(format!("Could not deserialize record: {}", e)));
+            Ok(record) => record,
+            Err(err) => {
+                return Err(Trap::FS(format!("Could not deserialize record: {}", err)));
             }
         };
 
@@ -33,6 +33,8 @@ impl Compiler {
     /// full path (including file + extension)
     pub fn compile(&mut self, destination: &Path) -> Result<(), Trap> {
         // Directory at destination
+
+        print!("Compiling ...");
 
         let full_destination = destination.join(self.source_snapshot_path.file_name().unwrap());
         let _ = fs::create_dir_all(&full_destination);
@@ -54,12 +56,14 @@ impl Compiler {
             // the recored)
             let file_destination = replace_common_prefix(&file_path, &snapshot_path, &full_destination.to_path_buf());
             let _ = force_copy(&file_path, &file_destination);
+
         }
 
         // Because `full_snapshot_path` is the `source` in this matter.
         make_tar_gz(&full_destination, format!("{}.tar.gz", full_destination.to_str().unwrap()))
             .map_err(|err| Trap::FS(format!("Could not archive and compress snapshot: {}", err)))?;
 
+        println!("Done");
         Ok(())
     }
 
