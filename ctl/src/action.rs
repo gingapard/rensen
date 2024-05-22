@@ -69,10 +69,9 @@ impl Action {
     fn add_host(&self) -> Result<(), Trap> {
 
         let hosts_path = &self.global_config.hosts_path;
-        
-        // Global host-settings for rensen
+
         let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
-            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?;
+            .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
 
         // Read addr
         let identifier = get_input("addr: ")
@@ -155,7 +154,34 @@ impl Action {
     }
 
     fn del_host(&self) -> Result<(), Trap> {
+        if self.operands.len() != 1 {
+            return Err(
+                Trap::InvalidInput(
+                    String::from("Invalid arguments for action. Use `help` for more details")
+                )
+            );
+        }
+        
+        let hostname = &self.operands[0];
+        let hosts_path = &self.global_config.hosts_path;
 
+        // Global host-settings for rensen
+        let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
+        
+        // Removing host from the settings by extractin it's index
+        for (i, host) in settings.hosts.iter().enumerate() {
+            if host.hostname.to_owned() == hostname.to_owned() {
+                settings.hosts.remove(i);
+                break;
+            }
+        }
+
+        // Writing it back to the file
+        settings.serialize_yaml(&hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
+
+        println!("Deleted {}", hostname);
 
         Ok(())
     }
@@ -319,7 +345,5 @@ impl Action {
         println!("r, run <hostname> <inc, full>       Runs backup for host based on what is specified in config."); 
         println!("l, list <hostname>                  Lists snapshots taken of host.");
         println!("c, compile <hostname>               Starts compilation interface.");
-
-
     }
 }
