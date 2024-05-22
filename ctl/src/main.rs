@@ -1,6 +1,6 @@
 // std/other
 use std::env; use std::io::{self, Write, BufRead};
-use console::Term;
+use console::{Term, Style};
 use std::path::{Path, PathBuf};
 
 // rensen-lib
@@ -26,7 +26,19 @@ impl Ctl {
     /// Starts the rensen-cli
     fn start(&mut self) -> Result<(), io::Error> {
 
-        println!("Rensen v0.1\nLicense: GPL-3.0\n");
+        let style = Style::new();
+
+        println!("Rensen Alpha v1.0\nLicense: GPL-3.0\n");
+        println!("{}", style.clone().bold().apply_to("                                                             
+             d8888b. d88888b d8b   db .d8888. d88888b d8b   db 
+             88  `8D 88'     888o  88 88'  YP 88'     888o  88 
+             88oobY' 88ooooo 88V8o 88 `8bo.   88ooooo 88V8o 88 
+             88`8b   88~~~~~ 88 V8o88   `Y8b. 88~~~~~ 88 V8o88 
+             88 `88. 88.     88  V888 db   8D 88.     88  V888 
+             88   YD Y88888P VP   V8P `8888Y' Y88888P VP   V8P 
+        "));
+
+        println!("This software comes with {}, to the extent permitted by applicable law.\n", style.clone().bold().underlined().apply_to("ABSOLUTELY NO WARRANTY"));
 
         loop {
 
@@ -73,23 +85,13 @@ impl Ctl {
         }
 
         let action_type = match input[0].to_lowercase().as_str() {
-            "add"     => ActionType::AddHost,
-            "remove"  => ActionType::RemoveHost,
-
-            "browse"  => ActionType::Browse,
-            "show"    => ActionType::Browse,
-
-            "run"     => ActionType::RunBackup,
-            "compile" => ActionType::Compile,
-
-            "help"    => ActionType::Help,
-            "?"       => ActionType::Help,
-            "h"       => ActionType::Help,
-
-            "exit"    => ActionType::Exit,
-            "quit"    => ActionType::Exit,
-            "q"       => ActionType::Exit,
-            
+            "a" | "add"           => ActionType::AddHost,
+            "d" | "del"           => ActionType::DeleteHost,
+            "l" | "list"          => ActionType::List,
+            "r" | "run"           => ActionType::RunBackup,
+            "c" | "compile"       => ActionType::Compile,
+            "h" | "?" | "help"    => ActionType::Help,
+            "q" | "quit" | "exit" => ActionType::Exit,
             _ => return None,
         };
 
