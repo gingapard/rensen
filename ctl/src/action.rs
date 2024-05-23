@@ -21,6 +21,12 @@ pub enum BackupMethod {
 }
 
 #[derive(PartialEq)]
+pub enum ListMethod {
+    Snapshots,
+    Config,
+}
+
+#[derive(PartialEq)]
 pub enum ActionType {
     AddHost,    // (1 arg)
     DeleteHost, // (1 arg)
@@ -35,7 +41,6 @@ pub enum ActionType {
 pub struct Action {
     pub action_type: ActionType,
     pub operands: Vec<String>,
-
     pub global_config: GlobalConfig,
 }
 
@@ -56,7 +61,7 @@ impl Action {
                 self.compile_snapshot()?;
             },
             ActionType::List=> {
-                self.list_snapshots()?;
+                self.list()?;
             },
             ActionType::Help       => {
                 self.print_help();
@@ -238,11 +243,38 @@ impl Action {
             );
         }
 
+        // checking the list method, either listing `snapshots` or `config`
+        let list_method = match self.operands[0].to_lowercase().as_str() {
+            "snapshots" | "s" | "snap" => ListMethod::Snapshots,
+               "config" | "c" | "conf" => ListMethod::Config,
+            _ => return Err(Trap::InvalidInput(format!("List Method: `{}` is not recognized in this action", self.operands[0])))
+        };
+
+        match list_method {
+            ListMethod::Snapshots => self.list_snapshots()?,
+            ListMethod::Config => self.list_config()?,
+            _                     => (),
+        }
+
+        Ok(())
+    }
+
+    fn list_config(&self) -> Result<(), Trap> {
+        if self.operands.len() != 2 {
+            return Err(
+                Trap::InvalidInput(
+                    String::from("Invalid arguments for action. Use `help` for more details")
+                )
+            );
+        }
+
+        
+
         Ok(())
     }
 
     fn list_snapshots(&self) -> Result<(), Trap> {
-        if self.operands.len() != 1 {
+        if self.operands.len() != 2 {
             return Err(
                 Trap::InvalidInput(
                     String::from("Invalid arguments for action. Use `help` for more details")
@@ -251,7 +283,7 @@ impl Action {
         }
 
         let hosts_path = &self.global_config.hosts_path;
-        let hostname = &self.operands[0];
+        let hostname = &self.operands[1];
 
         // Gettings the Settings
         let settings: Settings = Settings::deserialize_yaml(hosts_path)
@@ -265,11 +297,9 @@ impl Action {
 
         let dir_path = self.global_config.backupping_path
             .join(host_config.identifier)
-            .join(".records")
-        ;
+            .join(".records");
 
         /* Reading directory contentens and formatting outputs */
-
         let entries = match fs::read_dir(&dir_path) {
             Ok(entries) => entries,
             Err(err) => return Err(Trap::FS(
@@ -313,16 +343,17 @@ impl Action {
         let settings: Settings = Settings::deserialize_yaml(hosts_path)
             .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
 
+        // Gettings the host config associated with hostname
         let mut host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
             None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
         };
 
+        // Formatting path
         let record_path = host_config.destination
             .join(&host_config.identifier)
             .join(".records")
-            .join("record.json")
-        ;
+            .join("record.json");
         
         let record = Record::deserialize_json(&record_path)
             .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
@@ -330,10 +361,9 @@ impl Action {
         let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
         
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-            "inc"         => BackupMethod::Incremental,
-            "incremental" => BackupMethod::Incremental,
-            "full"        => BackupMethod::Full,
-            _             => return Err(Trap::InvalidInput(String::from("Invalid input")))
+             "inc" | "incremental" | "i" => BackupMethod::Incremental,
+                            "full" | "f" => BackupMethod::Full,
+                                       _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
         };
 
         if backup_method == BackupMethod::Incremental {
