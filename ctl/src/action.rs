@@ -34,6 +34,8 @@ pub enum ActionType {
     RunBackup,  // (2 arg)
     Compile,    // (2 arg)
     List,       // (1 arg)
+
+    Clear,      // 0 args
     Help,       // (0 arg)
     Exit,       // (0 arg)
 }
@@ -51,7 +53,7 @@ impl Action {
             ActionType::AddHost    => {
                 self.add_host()?;
             },
-            ActionType::DeleteHost=> {
+            ActionType::DeleteHost => {
                 self.del_host()?;
             },
             ActionType::RunBackup  => {
@@ -60,7 +62,7 @@ impl Action {
             ActionType::Compile    => {
                 self.compile_snapshot()?;
             },
-            ActionType::List=> {
+            ActionType::List       => {
                 self.list()?;
             },
             ActionType::Help       => {
@@ -72,6 +74,8 @@ impl Action {
 
         Ok(())
     }
+
+    /* add action */
 
     fn add_host(&self) -> Result<(), Trap> {
 
@@ -127,7 +131,7 @@ impl Action {
             .trim().to_string();
 
         // Read backup frequency
-        let frequency_hrs = match get_input("backup frquency (hrs): ") {
+        let frequency_hrs = match get_input("backup frequency (hrs): ") {
             Ok(input) => {
                 if input.trim().is_empty() {
                     24.0
@@ -159,6 +163,8 @@ impl Action {
 
         Ok(())
     }
+
+    /* del action */
 
     fn del_host(&self) -> Result<(), Trap> {
         if self.operands.len() != 1 {
@@ -193,6 +199,8 @@ impl Action {
         Ok(())
     }
 
+    /* compile action */
+
     fn compile_snapshot(&self) -> Result<(), Trap> {
         if self.operands.len() != 1 {
             return Err(
@@ -216,7 +224,7 @@ impl Action {
         let mut snapshot = get_input("Snapshot: ")
             .map_err(|err| Trap::InvalidInput(format!("Could not read input: {:?}", err)))?;
         
-        // Making it point to the record.json file if `latest` if given
+        // Making it point to the record.json file if `latest` is given
         if snapshot.trim() == "latest" {
             snapshot = String::from("record");
         }
@@ -234,8 +242,25 @@ impl Action {
         Ok(())
     }
 
+    /* List action */
+
     fn list(&self) -> Result<(), Trap> {
-        if self.operands.len() != 2 {
+
+        // Printing hostnames of all hosts if the `list` action is pure
+        if self.operands.len() == 0 {
+            let settings: Settings = Settings::deserialize_yaml(&self.global_config.hosts_path)
+                .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", &self.global_config.hosts_path, err)))?;
+
+            let style = console::Style::new();
+            println!("{}", style.clone().bold().apply_to("Hosts:"));
+
+            for host in settings.hosts {
+                println!("->  {}", style.clone().bold().blue().apply_to(host.hostname));
+            }
+
+            return Ok(());
+        }
+        else if self.operands.len() != 2 {
             return Err(
                 Trap::InvalidInput(
                     String::from("Invalid arguments for action. Use `help` for more details")
@@ -253,7 +278,6 @@ impl Action {
         match list_method {
             ListMethod::Snapshots => self.list_snapshots()?,
             ListMethod::Config => self.list_config()?,
-            _                     => (),
         }
 
         Ok(())
@@ -268,7 +292,21 @@ impl Action {
             );
         }
 
-        
+
+        let hosts_path = &self.global_config.hosts_path;
+        let hostname = &self.operands[1];
+
+        // Gettings the Settings
+        let settings: Settings = Settings::deserialize_yaml(hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+
+        // Extracting the config for associated hostname
+        let host_config = match settings.associated_config(&hostname) {
+            Some(config) => config,
+            None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
+        };
+
+        println!("{}", host_config);
 
         Ok(())
     }
@@ -308,7 +346,7 @@ impl Action {
 
 
         let style = console::Style::new();
-        println!("{}\n", style.clone().bold().apply_to("Snapshots: "));
+        println!("{}", style.clone().bold().apply_to("Snapshots: "));
 
         for entry in entries {
 
@@ -326,6 +364,8 @@ impl Action {
 
         Ok(())
     }
+
+    /* run action */
 
     fn run_backup(&self) -> Result<(), Trap> {
         if self.operands.len() != 2 {
@@ -374,6 +414,8 @@ impl Action {
 
         Ok(())
     }
+
+    /* help action */
 
     pub fn print_help(&self) {
         let style = Style::new();

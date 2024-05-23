@@ -3,14 +3,11 @@ use serde_json;
 use serde_yaml;
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use std::io::{prelude::*, self, Write, Read};
+use std::io::{self, Write, Read};
 use std::fmt;
 
 use crate::traits;
 use traits::YamlFile;
-
-use crate::logging;
-use logging::{log_trap, Trap};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GlobalConfig {
@@ -30,7 +27,7 @@ fn test_global_config_serialize() {
     };
 
     let path = PathBuf::from("gc.yml");
-    gc.serialize_yaml(&path);
+    let _ = gc.serialize_yaml(&path);
 }
 
 impl YamlFile for GlobalConfig {
@@ -99,6 +96,25 @@ impl HostConfig {
             destination,
             frequency_hrs: Some(frequency_hrs),
         }
+    }
+}
+
+impl fmt::Display for HostConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "addr: {}\nuser: {}\nport: {}\nkey Path: {}\nsource: {}\ndestination: {}\nFrequency (hrs): {}",
+            self.identifier,
+            self.user,
+            self.port.unwrap_or(22),
+            self.key_path
+                .as_ref()
+                .map(|path| path.display().to_string())
+                .unwrap_or_else(|| "$HOME/.ssh/ed25516".to_string()),
+            self.source.display(),
+            self.destination.display(),
+            self.frequency_hrs.unwrap_or(24.0),
+        )
     }
 }
 

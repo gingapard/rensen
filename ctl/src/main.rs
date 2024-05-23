@@ -42,7 +42,7 @@ impl Ctl {
 
         loop {
 
-            let input = match get_input("<rensen> ") {
+            let input = match get_input(format!("{} ", style.clone().bold().yellow().apply_to("<rensen>")).as_str()) {
                 Ok(input) => {
                     if input.len() < 2 { continue };
                     input
@@ -68,6 +68,10 @@ impl Ctl {
                 println!("bye");
                 break;
             }
+            else if action.action_type == ActionType::Clear {
+                self.clear_screen();
+                continue;
+            }
 
             // execute the action of commnad given
             let _ = match action.execute() {
@@ -90,6 +94,7 @@ impl Ctl {
             "l" | "list"          => ActionType::List,
             "r" | "run"           => ActionType::RunBackup,
             "c" | "compile"       => ActionType::Compile,
+            "clear"               => ActionType::Clear,
             "h" | "?" | "help"    => ActionType::Help,
             "q" | "quit" | "exit" => ActionType::Exit,
             _ => return None,
