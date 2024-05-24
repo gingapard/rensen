@@ -28,16 +28,16 @@ pub enum ListMethod {
 
 #[derive(PartialEq)]
 pub enum ActionType {
-    AddHost,    // (1 arg)
-    DeleteHost, // (1 arg)
-    ModifyHost, // (1 arg)
-    RunBackup,  // (2 arg)
-    Compile,    // (2 arg)
-    List,       // (1 arg)
+    AddHost,    // 1 arg
+    DeleteHost, // 1 arg
+    ModifyHost, // 1 arg
+    RunBackup,  // 2 arg
+    Compile,    // 1 arg
+    List,       // 2 arg
 
-    Clear,      // 0 args
-    Help,       // (0 arg)
-    Exit,       // (0 arg)
+    Clear,      // 0 arg
+    Help,       // 0 arg
+    Exit,       // 0 arg
 }
 
 pub struct Action {
@@ -116,7 +116,7 @@ impl Action {
         };
 
         // Read key-path
-        let key_path = get_input("ssh-key: ")
+        let key_path = get_input("ssh-key path: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
@@ -131,7 +131,7 @@ impl Action {
             .trim().to_string();
 
         // Read backup frequency
-        let frequency_hrs = match get_input("backup frequency (hrs): ") {
+        let frequency_hrs = match get_input("default backup frequency (hrs): ") {
             Ok(input) => {
                 if input.trim().is_empty() {
                     24.0
@@ -155,8 +155,11 @@ impl Action {
         };
 
         // Add Config to settings and serialize
-        let hostconfig = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), frequency_hrs);
-        settings.hosts.push(Host { hostname: self.operands[0].clone(), config: hostconfig  });
+        let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), frequency_hrs);
+        println!("{}", &host_config);
+
+        settings.hosts.push(Host { hostname: self.operands[0].clone(), config: host_config  });
+
         
         let _ = settings.serialize_yaml(hosts_path)
             .map_err(|err| Trap::FS(format!("Could not serialize yaml: {}", err)))?;
@@ -194,7 +197,7 @@ impl Action {
         settings.serialize_yaml(&hosts_path)
             .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
 
-        println!("Deleted {}", hostname);
+        println!("Deleted `{}`", hostname);
 
         Ok(())
     }
@@ -306,6 +309,8 @@ impl Action {
             None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
         };
 
+        let style = console::Style::new();
+        println!("{}", style.clone().bold().apply_to(format!("Config ({}): ", hostname).as_str()));
         println!("{}", host_config);
 
         Ok(())
@@ -330,7 +335,7 @@ impl Action {
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
-            None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
+            None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
         };
 
         let dir_path = self.global_config.backupping_path
@@ -346,7 +351,7 @@ impl Action {
 
 
         let style = console::Style::new();
-        println!("{}", style.clone().bold().apply_to("Snapshots: "));
+        println!("{}", style.clone().bold().apply_to(format!("Snapshots ({}): ", hostname).as_str()));
 
         for entry in entries {
 
@@ -401,9 +406,9 @@ impl Action {
         let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
         
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-             "inc" | "incremental" | "i" => BackupMethod::Incremental,
-                            "full" | "f" => BackupMethod::Full,
-                                       _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
+              "inc"| "i" => BackupMethod::Incremental,
+            "full" | "f" => BackupMethod::Full,
+                       _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
         };
 
         if backup_method == BackupMethod::Incremental {
@@ -422,13 +427,13 @@ impl Action {
 
         if self.operands.len() > 0 {
             match self.operands[0].to_lowercase().as_str() {
-                "add"     => {
+                "add" => {
                     println!("a, add <hostname>     Enters host-adding interface.");
                     println!(
                         "Enters the host-adding interface where you are able to specify information about\nthen host which is going to be backupped.\n\n{} Remember to have a ssh-key generated in the path you specify, and also have thepublic key on the host machine.",
                     style.bold().red().apply_to("Note:"));
                 },
-                "del"     => {
+                "del" => {
                     println!("d, del <hostname>     Deletes host config.");
                     println!("Deletes the specified host's config from the configuration file located at probably in /etc/rensen or has specified path in /etc/rensen/rensen_config");
                 },
@@ -447,7 +452,7 @@ impl Action {
 
         println!("a,     add <hostname>               Enters host-adding interface.");
         println!("d,     del <hostname>               Deletes host config.");
-        println!("m,  modify <hostname>               Enters modification interface.");
+        println!("m,     mod <hostname>               Enters modification interface.");
         println!("r,     run <hostname> <inc, full>   Runs backup for host based on what is specified in config."); 
         println!("l,    list <hostname>               Lists snapshots taken of host.");
         println!("c, compile <hostname>               Starts compilation interface.");
