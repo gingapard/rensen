@@ -92,6 +92,7 @@ impl Ctl {
             "a" | "add"           => ActionType::AddHost,
             "d" | "del"           => ActionType::DeleteHost,
             "l" | "list"          => ActionType::List,
+            "m" | "mod"           => ActionType::ModifyHost,
             "r" | "run"           => ActionType::RunBackup,
             "c" | "compile"       => ActionType::Compile,
             "clear"               => ActionType::Clear,

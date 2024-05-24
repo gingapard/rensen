@@ -56,6 +56,9 @@ impl Action {
             ActionType::DeleteHost => {
                 self.del_host()?;
             },
+            ActionType::ModifyHost => {
+                self.mod_host()?;
+            },
             ActionType::RunBackup  => {
                 self.run_backup()?;
             },
@@ -78,11 +81,26 @@ impl Action {
     /* add action */
 
     fn add_host(&self) -> Result<(), Trap> {
+        if self.operands.len() != 1 {
+            return Err(
+                Trap::InvalidInput(
+                    String::from("Invalid arguments for action. Use `help` for more details")
+                )
+            );
+        }
 
         let hosts_path = &self.global_config.hosts_path;
+        let hostname = &self.operands[0];
 
         let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
             .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
+
+        // checking if the hostname is taken
+        for host in settings.hosts.iter() {
+            if hostname.to_owned() == host.hostname {
+                return Err(Trap::InvalidInput(format!("Hostname `{}` already in use!", hostname)));
+            }
+        }
 
         // Read addr
         let identifier = get_input("addr: ")
@@ -158,9 +176,8 @@ impl Action {
         let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), frequency_hrs);
         println!("{}", &host_config);
 
-        settings.hosts.push(Host { hostname: self.operands[0].clone(), config: host_config  });
+        settings.hosts.push(Host { hostname: hostname.clone(), config: host_config  });
 
-        
         let _ = settings.serialize_yaml(hosts_path)
             .map_err(|err| Trap::FS(format!("Could not serialize yaml: {}", err)))?;
 
@@ -198,6 +215,126 @@ impl Action {
             .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
 
         println!("Deleted `{}`", hostname);
+
+        Ok(())
+    }
+
+    fn mod_host(&self) -> Result<(), Trap> {
+        let hosts_path = &self.global_config.hosts_path;
+        let hostname = &self.operands[0];
+        let style = Style::new();
+
+        let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
+
+        // Gettings the host_config
+        let host_config = match settings.associated_config(&hostname) {
+            Some(config) => config,
+            None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
+        };
+
+        println!("{}", style.clone().bold().apply_to(format!("Modifying {}, press enter to skip a field: ", hostname)));
+
+        // Read addr
+        let mut identifier = get_input("addr: ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
+        
+        // Read Username 
+        let mut user = get_input("user: ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
+
+        // Read port
+        let mut port = get_input("port (press enter for 22): ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
+
+        // Read key-path
+        let mut key_path = get_input("ssh-key path: ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
+            .trim().to_string();
+
+        // Read source directory
+        let mut source = get_input("source: ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
+            .trim().to_string();
+
+        // Read destination/backup directory
+        let mut destination = get_input("destination: ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
+            .trim().to_string();
+
+        // Read backup frequency
+        let mut frequency_hrs = get_input("default backup frequency (hrs): ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
+
+        let new_host_config: HostConfig = HostConfig::from(
+            match user.len() {
+                0 => host_config.user.to_owned(),
+                _ => user
+            },
+            match identifier.len() {
+                0 => host_config.identifier.to_owned(),
+                _ => identifier
+            },
+            match port.len() {
+                0 => host_config.port.unwrap_or(22).to_owned(),
+                _ => {
+                    if port.trim().is_empty() {
+                        22
+                    }
+                    else {
+                        match port.trim().parse::<u16>() {
+                            Ok(port) => port,
+                            Err(err) => {
+                                return Err(
+                                    Trap::ReadInput(format!("Could not read input: {}", err))
+                                );
+                            }
+                        }
+                    }
+                }
+            },
+            match key_path.len() {
+                0 => host_config.key_path.unwrap_or("".into()).to_owned(),
+                _ => PathBuf::from(&key_path), 
+            },
+            match source.len() {
+                0 => host_config.source.to_owned(),
+                _ => PathBuf::from(&source), 
+            },
+            match destination.len() {
+                0 => host_config.destination.to_owned(),
+                _ => PathBuf::from(&destination), 
+            },
+            match frequency_hrs.len() {
+                0 => host_config.frequency_hrs.unwrap_or(24.0).to_owned(),
+                _ => {
+                    if port.trim().is_empty() {
+                        24.0
+                    }
+                    else {
+                        match frequency_hrs.trim().parse::<f32>() {
+                            Ok(v) => v,
+                            Err(err) => {
+                                return Err(
+                                    Trap::ReadInput(format!("Could not read input: {}", err))
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        for (i, host) in settings.hosts.iter().enumerate() {
+            if host.hostname == hostname.to_owned() {
+                settings.hosts.remove(i);
+                break;
+            }
+        }
+
+        settings.hosts.push(Host { hostname: hostname.to_string(), config: new_host_config });
+        settings.serialize_yaml(&self.global_config.hosts_path)
+            .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
 
         Ok(())
     }
