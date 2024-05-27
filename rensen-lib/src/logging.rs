@@ -1,4 +1,9 @@
+use std::fs::OpenOptions;
+use std::io::prelude::*;
+
 use log::error;
+use crate::utils::get_datetime;
+use crate::config::GlobalConfig;
 
 #[derive(Debug)]
 pub enum Trap {
@@ -21,21 +26,41 @@ pub enum Trap {
     ReadInput(String)
 }
 
-pub fn log_trap(trap: Trap) {
-    match trap {
-        Trap::STD(msg)          => error!("STD: {}", msg),
-        Trap::Connect(msg)      => error!("Connect: {}", msg),
-        Trap::Session(msg)      => error!("Session: {}", msg),
-        Trap::Handshake(msg)    => error!("Handshake: {}", msg),
-        Trap::KeyLoad(msg)      => error!("KeyLoad: {}", msg),
-        Trap::Auth(msg)         => error!("Auth: {}", msg),
-        Trap::Channel(msg)      => error!("Channel: {}", msg),
-        Trap::FS(msg)           => error!("FS: {}", msg),
-        Trap::Config(msg)       => error!("Config: {}", msg),
-        Trap::Copy(msg)         => error!("Copy: {}", msg),
-        Trap::Missing(msg)      => error!("Missing: {}", msg),
-        Trap::InvalidInput(msg) => error!("Invalid: {}", msg),
-        Trap::ReadInput(msg)    => error!("ReadInput: {}", msg),
+pub enum LogStatus {
+    Success,
+    Error,
+}
+
+pub fn log_trap(global_config: GlobalConfig, trap: Trap) {
+    let trap_msg = match trap {
+        Trap::STD(msg)          => format!("STD: {}", msg),
+        Trap::Connect(msg)      => format!("Connect: {}", msg),
+        Trap::Session(msg)      => format!("Session: {}", msg),
+        Trap::Handshake(msg)    => format!("Handshake: {}", msg),
+        Trap::KeyLoad(msg)      => format!("KeyLoad: {}", msg),
+        Trap::Auth(msg)         => format!("Auth: {}", msg),
+        Trap::Channel(msg)      => format!("Channel: {}", msg),
+        Trap::FS(msg)           => format!("FS: {}", msg),
+        Trap::Config(msg)       => format!("Config: {}", msg),
+        Trap::Copy(msg)         => format!("Copy: {}", msg),
+        Trap::Missing(msg)      => format!("Missing: {}", msg),
+        Trap::InvalidInput(msg) => format!("Invalid: {}", msg),
+        Trap::ReadInput(msg)    => format!("ReadInput: {}", msg),
+    };
+    
+    // Opening log file
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(&global_config.log_path)
+        .unwrap();
+
+    let current_time = get_datetime();
+
+    if let Err(err) = writeln!(file, "[{}] {}", current_time, trap_msg) {
+        eprintln!("Problems writing to log file `{:?}`. Please check permissions: {}", &global_config.log_path, err);
     }
+
+    error!("{}", trap_msg);
 }
 

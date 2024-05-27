@@ -403,7 +403,7 @@ pub mod rsync {
                 Trap::FS(format!("Could not create file: {}\nCheck permissions!", err))
             })?;
 
-            print!("Copying: {:?} to {:?}...", source, destination);
+            print!("Copying: {:?} to {:?}... ", source, destination);
             let mut buffer = [0; 4096];
             loop {
                 match channel.read(&mut buffer) {
