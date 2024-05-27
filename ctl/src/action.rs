@@ -219,6 +219,8 @@ impl Action {
         Ok(())
     }
 
+    /* mod action */
+
     fn mod_host(&self) -> Result<(), Trap> {
         let hosts_path = &self.global_config.hosts_path;
         let hostname = &self.operands[0];
@@ -236,34 +238,34 @@ impl Action {
         println!("{}", style.clone().bold().apply_to(format!("Modifying {}, press enter to skip a field: ", hostname)));
 
         // Read addr
-        let mut identifier = get_input("addr: ")
+        let identifier = get_input("addr: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
         
         // Read Username 
-        let mut user = get_input("user: ")
+        let user = get_input("user: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read port
-        let mut port = get_input("port (press enter for 22): ")
+        let port = get_input("port (press enter for 22): ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read key-path
-        let mut key_path = get_input("ssh-key path: ")
+        let key_path = get_input("ssh-key path: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
         // Read source directory
-        let mut source = get_input("source: ")
+        let source = get_input("source: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
         // Read destination/backup directory
-        let mut destination = get_input("destination: ")
+        let destination = get_input("destination: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
         // Read backup frequency
-        let mut frequency_hrs = get_input("default backup frequency (hrs): ")
+        let frequency_hrs = get_input("default backup frequency (hrs): ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         let new_host_config: HostConfig = HostConfig::from(
@@ -325,6 +327,10 @@ impl Action {
             }
         );
 
+        println!("{}", style.clone().bold().apply_to("New config:"));
+        println!("{}", new_host_config);
+
+        // Gets the index of host.hostname == hostname.to_owned()
         for (i, host) in settings.hosts.iter().enumerate() {
             if host.hostname == hostname.to_owned() {
                 settings.hosts.remove(i);
@@ -332,6 +338,7 @@ impl Action {
             }
         }
 
+        // Pushes new_host to settings.hosts and serializes to path
         settings.hosts.push(Host { hostname: hostname.to_string(), config: new_host_config });
         settings.serialize_yaml(&self.global_config.hosts_path)
             .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
@@ -536,9 +543,11 @@ impl Action {
             .join(&host_config.identifier)
             .join(".records")
             .join("record.json");
-        
+
+        println!("Reading record... ");
         let record = Record::deserialize_json(&record_path)
             .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
+        println!("Done");
 
         let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
         
