@@ -552,9 +552,9 @@ impl Action {
         let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
         
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-              "inc"| "i" => BackupMethod::Incremental,
-            "full" | "f" => BackupMethod::Full,
-                       _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
+             "incremental" | "inc"| "i" => BackupMethod::Incremental,
+                           "full" | "f" => BackupMethod::Full,
+                                      _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
         };
 
         if backup_method == BackupMethod::Incremental {
@@ -583,24 +583,39 @@ impl Action {
                     println!("d, del <hostname>     Deletes host config.");
                     println!("Deletes the specified host's config from the configuration file located at probably in /etc/rensen or has specified path in /etc/rensen/rensen_config");
                 },
-                "modify"  => (),
-                "run"     => (),
-                "list"    => (),
-                "compile" => (),
-                _ => (),
+                "mod"     => {
+                    println!("m, mod <hostname>     Enters modification interface.");
+                    println!("Allows you to modify a config for a host that already exists instead of readding it.");
+                },
+                "run"     => {
+                    println!("r, run <hostname> <inc, full>   Runs backup for host based on what is specified in config."); 
+                    println!("Runs the rensen backup system, either incremental or full backups. Backupped files will be stored\nat path specified in /etc/rensen/rensen_config.yml\n");
+                    println!("\nAliases:\nincremental, inc, i\nfull, f");
+                },
+                "list"    => {
+                    println!("l, list <snapshots, config> <hostname>      Lists snapshots taken of host.");
+                    println!("\nsnapshots: \nThis checks the snapshots/backups taken of the host at the location specified in /etc/rensen/rensen_config.yml");
+                    println!("\nconfig: \nEchos out the deserialized format of the config file, stored at location specified in /etc/rensen/rensne_config.yml");
+                    println!("\nAliases: \nsnapshots, snap, s\nconfig, conf, c"); 
+                },
+                "compile" => {
+                    println!("c, compile <hostname>     Starts compilation interface.");
+                    println!("Starts the interface for compilation, where you need to specify a snapshot from what is available in `list` action.");
+                },
+                _ => println!("Not a regognized action"),
             }
 
             return;
         }
 
-        println!("h, ?, help                          Show this info.");
-        println!("q, quit, exit                       Quits ctl.\n");
+        println!("h, ?, help                             Show this info.");
+        println!("q, quit, exit                          Quits ctl.\n");
 
-        println!("a,     add <hostname>               Enters host-adding interface.");
-        println!("d,     del <hostname>               Deletes host config.");
-        println!("m,     mod <hostname>               Enters modification interface.");
-        println!("r,     run <hostname> <inc, full>   Runs backup for host based on what is specified in config."); 
-        println!("l,    list <hostname>               Lists snapshots taken of host.");
-        println!("c, compile <hostname>               Starts compilation interface.");
+        println!("a, add <hostname>                      Enters host-adding interface.");
+        println!("d, del <hostname>                      Deletes host config.");
+        println!("m, mod <hostname>                      Enters modification interface.");
+        println!("r, run <hostname> <inc, full>          Runs backup for host based on what is specified in config."); 
+        println!("l, list <snapshots, config> <hostname> Lists snapshots taken of host or echos config file");
+        println!("c, compile <hostname>                  Starts compilation interface.");
     }
 }
