@@ -1,4 +1,5 @@
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, File};
+use std::path::Path;
 use std::io::prelude::*;
 
 use log::error;
@@ -31,7 +32,7 @@ pub enum LogStatus {
     Error,
 }
 
-pub fn log_trap(global_config: GlobalConfig, trap: Trap) {
+pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
     let trap_msg = match trap {
         Trap::STD(msg)          => format!("STD: {}", msg),
         Trap::Connect(msg)      => format!("Connect: {}", msg),
@@ -49,6 +50,10 @@ pub fn log_trap(global_config: GlobalConfig, trap: Trap) {
     };
     
     // Opening log file
+    if !Path::new(&global_config.log_path).exists() {
+        let _ = File::create(&global_config.log_path);
+    }
+
     let mut file = OpenOptions::new()
         .write(true)
         .append(true)

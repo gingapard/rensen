@@ -76,7 +76,10 @@ impl Ctl {
             // execute the action of commnad given
             let _ = match action.execute() {
                 Ok(_) => (),
-                Err(e) => println!("{:?}", e)
+                Err(e) => {
+                    log_trap(&self.global_config, &e);
+                    println!("{:?}", e)
+                }
             };
         }
         
