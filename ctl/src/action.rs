@@ -609,13 +609,14 @@ impl Action {
         }
 
         println!("h, ?, help                             Show this info.");
-        println!("q, quit, exit                          Quits ctl.\n");
+        println!("q, quit, exit                          Quits ctl.");
+        println!("clear                                  Clear screen.\n");
 
         println!("a, add <hostname>                      Enters host-adding interface.");
         println!("d, del <hostname>                      Deletes host config.");
         println!("m, mod <hostname>                      Enters modification interface.");
         println!("r, run <hostname> <inc, full>          Runs backup for host based on what is specified in config."); 
-        println!("l, list <snapshots, config> <hostname> Lists snapshots taken of host or echos config file");
+        println!("l, list <snapshots, config> <hostname> Lists snapshots taken of host or echos config file.");
         println!("c, compile <hostname>                  Starts compilation interface.");
     }
 }
