@@ -1,9 +1,9 @@
 [Unit]
-Description=Senren Backup Service
+Description=Renen Backup Sentinel
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/senren
+ExecStart=/usr/bin/rensen
 Restart=always
 User=root
 RestartSec=60

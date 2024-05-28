@@ -63,7 +63,7 @@ pub struct HostConfig {
     pub key_path: Option<PathBuf>, // default: "$HOME/.ssh/ed25516"
     pub source: PathBuf,
     pub destination: PathBuf,
-    pub frequency_hrs: Option<f32>, // default: 24.0 hrs
+    pub cron_schedule: Option<String>, // defualt `0 0 * * *`
 }
 
 #[derive(Serialize, Deserialize)]
@@ -85,7 +85,7 @@ impl HostConfig {
         key_path: PathBuf,
         source: PathBuf,
         destination: PathBuf,
-        frequency_hrs: f32,
+        cron_schedule: String
         ) -> Self {
         Self {
             user,
@@ -94,7 +94,7 @@ impl HostConfig {
             key_path: Some(key_path),
             source,
             destination,
-            frequency_hrs: Some(frequency_hrs),
+            cron_schedule: Some(cron_schedule),
         }
     }
 }
@@ -113,7 +113,7 @@ impl fmt::Display for HostConfig {
                 .unwrap_or_else(|| "$HOME/.ssh/ed25516".to_string()),
             self.source.display(),
             self.destination.display(),
-            self.frequency_hrs.unwrap_or(24.0),
+            self.cron_schedule.as_ref().unwrap(),
         )
     }
 }

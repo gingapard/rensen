@@ -148,32 +148,13 @@ impl Action {
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
-        // Read backup frequency
-        let frequency_hrs = match get_input("default backup frequency (hrs): ") {
-            Ok(input) => {
-                if input.trim().is_empty() {
-                    24.0
-                }
-                else {
-                    match input.trim().parse::<f32>() {
-                        Ok(port) => port,
-                        Err(err) => {
-                            return Err(
-                                Trap::ReadInput(format!("Could not convert to f32: {}", err))
-                            );
-                        }
-                    }
-                }
-            }
-            Err(err) => {
-                println!("Failed to read input");
-                return Err(Trap::ReadInput(format!("Could not read input: {}", err)));
-            }
-
-        };
+        // Read backup schedule
+        let cron_schedule = get_input("backupping schedule (Cron expression): ")
+            .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
+            .trim().to_string();
 
         // Add Config to settings and serialize
-        let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), frequency_hrs);
+        let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), cron_schedule.to_string());
         println!("{}", &host_config);
 
         settings.hosts.push(Host { hostname: hostname.clone(), config: host_config  });
@@ -264,8 +245,8 @@ impl Action {
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
-        // Read backup frequency
-        let frequency_hrs = get_input("default backup frequency (hrs): ")
+        // Read backupping schedule
+        let cron_schedule = get_input("backupping schedule (Cron expression): ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         let new_host_config: HostConfig = HostConfig::from(
@@ -307,23 +288,9 @@ impl Action {
                 0 => host_config.destination.to_owned(),
                 _ => PathBuf::from(&destination), 
             },
-            match frequency_hrs.len() {
-                0 => host_config.frequency_hrs.unwrap_or(24.0).to_owned(),
-                _ => {
-                    if port.trim().is_empty() {
-                        24.0
-                    }
-                    else {
-                        match frequency_hrs.trim().parse::<f32>() {
-                            Ok(v) => v,
-                            Err(err) => {
-                                return Err(
-                                    Trap::ReadInput(format!("Could not read input: {}", err))
-                                );
-                            }
-                        }
-                    }
-                }
+            match cron_schedule.len() {
+                0 => host_config.cron_schedule.unwrap_or(String::from("0 0 * * *")).to_owned(),
+                _ => cron_schedule
             }
         );
 
