@@ -66,7 +66,7 @@ pub struct HostConfig {
     pub cron_schedule: Option<String>, // defualt `0 0 * * *`
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Host {
     pub hostname: String,
     pub config: HostConfig
