@@ -8,10 +8,8 @@ pub mod traits;
 pub mod snapshot;
 pub use traits::{Rsync, JsonFile, YamlFile};
 
-use backup::rsync::*;
 
 pub use config::*;
-use logging::Trap;
 
 pub use record::Record;
 use std::{env, net, io::Result, path::{Path, PathBuf}, error};

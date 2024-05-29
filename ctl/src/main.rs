@@ -1,7 +1,7 @@
 // std/other
-use std::env; use std::io::{self, Write, BufRead};
+use std::io;
 use console::{Term, Style};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 // rensen-lib
 use rensen_lib::logging::*;

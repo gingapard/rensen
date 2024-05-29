@@ -7,7 +7,7 @@ pub mod rsync {
     use std::path::{Path, PathBuf};
     use std::ffi::OsStr;
     use crate::traits::*;
-    use crate::logging::{log_trap, Trap};
+    use crate::logging::Trap;
     use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime};
     use crate::record::Record;

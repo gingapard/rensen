@@ -1,17 +1,17 @@
 use std::fs::{self, File};
-use std::io::{self, SeekFrom, BufReader, BufWriter, Read, Write};
+use std::io::{self, SeekFrom, BufReader, BufWriter, Read};
 use std::path::{Path, PathBuf}; use std::io::prelude::*;
 use flate2::{write::GzEncoder, read::GzDecoder};
 use flate2::Compression;
 use tar::{Builder, Archive};
 use sha3::{Digest, Sha3_256};
-use std::os::unix::fs::{PermissionsExt, MetadataExt, FileExt};
+use std::os::unix::fs::PermissionsExt;
 use std::time::{SystemTime, Duration};
 use ssh2::FileStat;
 use chrono::offset;
 
 use crate::logging;
-use logging::{log_trap, Trap};
+use logging::Trap;
 
 use crate::traits::ConvertFromPath;
 

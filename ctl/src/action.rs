@@ -12,8 +12,6 @@ use crate::utils::*;
 use std::path::PathBuf;
 use std::fs;
 
-use console::style;
-
 #[derive(PartialEq)]
 pub enum BackupMethod {
     Full,

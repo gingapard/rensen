@@ -54,11 +54,16 @@ pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
         let _ = File::create(&global_config.log_path);
     }
 
-    let mut file = OpenOptions::new()
+    let mut file = match OpenOptions::new()
         .write(true)
         .append(true)
-        .open(&global_config.log_path)
-        .unwrap();
+        .open(&global_config.log_path) {
+            Ok(file) => file,
+            Err(_) => {
+                println!("Hey! you should run this program as sudo if you expect the logging to work.");
+                return;
+            },
+    };
 
     let current_time = get_datetime();
 

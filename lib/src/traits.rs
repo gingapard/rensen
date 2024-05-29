@@ -1,6 +1,6 @@
 use crate::logging;
-use logging::{Trap, log_trap};
-use std::path::{Path, PathBuf};
+use logging::Trap;
+use std::path::Path;
 
 pub trait YamlFile: Sized { 
     /// Wrapper for serde::yaml
