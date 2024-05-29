@@ -103,7 +103,7 @@ impl fmt::Display for HostConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "addr: {}\nuser: {}\nport: {}\nkey Path: {}\nsource: {}\ndestination: {}\nfrequency (hrs): {}",
+            "addr: {}\nuser: {}\nport: {}\nkey Path: {}\nsource: {}\ndestination: {}\ncron_schedule: {}",
             self.identifier,
             self.user,
             self.port.unwrap_or(22),

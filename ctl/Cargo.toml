@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 console = "0.15.8"
-rensen-lib = { path = "../rensen-lib" }
+rensen-lib = { path = "../lib" }

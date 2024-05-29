@@ -97,7 +97,7 @@ impl Ctl {
             "l" | "list"          => ActionType::List,
             "m" | "mod"           => ActionType::ModifyHost,
             "r" | "run"           => ActionType::RunBackup,
-            "c" | "com"           => ActionType::Compile,
+            "c" | "comp"          => ActionType::Compile,
             "clear"               => ActionType::Clear,
             "h" | "?" | "help"    => ActionType::Help,
             "q" | "quit" | "exit" => ActionType::Exit,

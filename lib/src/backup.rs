@@ -335,7 +335,6 @@ pub mod rsync {
                     Trap::FS(format!("Could not create directory: {}", err))
 
                 })?;
-                println!("...destdir created");
             }
             
             let dir_entries = self.sess.as_ref().unwrap().sftp().map_err(|err| {

@@ -6,12 +6,14 @@ use rensen_lib::logging::*;
 pub mod daemon;
 use crate::daemon::RensenDaemon;
 
-use cron::Schedule;
-use std::str::FromStr;
-use tokio::time::{interval, Duration};
+use std::thread;
 use std::sync::Arc;
-use tokio::sync::{MutexGuard, Mutex};
 use std::path::{PathBuf, Path};
+
+#[derive(Debug)]
+struct RensenSchedule {
+    pub schedules: Vec<String>,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Trap>  {
@@ -23,6 +25,11 @@ async fn main() -> Result<(), Trap>  {
     let settings = Settings::deserialize_yaml(&global_config.backupping_path)
         .map_err(|err| Trap::FS(format!("Could not deserialize Settings @ {:?}: {}", global_config.backupping_path, err)))?;
 
+    for host in settings.hosts.iter() {
+
+    }
+
+    /*
     let host = &settings.hosts[1];
 
     let schedule = Schedule::from_str(&host.config.cron_schedule.clone().unwrap_or(String::from("0 0 * * *")))
@@ -32,6 +39,7 @@ async fn main() -> Result<(), Trap>  {
     let rensen_daemon = RensenDaemon::from(global_config, host.clone(), schedule);
 
     let _ = rensen_daemon.run_scheduler().await;
+    */
 
     Ok(())
 }

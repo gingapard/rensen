@@ -511,7 +511,7 @@ impl Action {
             .join(".records")
             .join("record.json");
 
-        println!("Reading record... ");
+        print!("Reading record... ");
         let record = Record::deserialize_json(&record_path)
             .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
         println!("Done");
@@ -584,6 +584,6 @@ impl Action {
         println!("m, mod <hostname>                      Enters modification interface.");
         println!("r, run <hostname> <inc, full>          Runs backup for host based on what is specified in config."); 
         println!("l, list <snapshots, config> <hostname> Lists snapshots taken of host or echos config file.");
-        println!("c, compile <hostname>                  Starts compilation interface.");
+        println!("c, comp <hostname>                     Starts compilation interface.");
     }
 }
