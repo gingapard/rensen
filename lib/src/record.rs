@@ -12,12 +12,14 @@ use crate::snapshot::*;
 /// A record storing the data for precompressed files.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
+    pub size: u64,
     pub snapshot: Snapshot,
 }
 
 impl Record {
     pub fn new() -> Self {
         Record {
+            size: 0,
             snapshot: Snapshot::new(),
         }
     }

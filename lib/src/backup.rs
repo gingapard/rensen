@@ -9,7 +9,7 @@ pub mod rsync {
     use crate::traits::*;
     use crate::logging::Trap;
     use crate::config::*;
-    use crate::utils::{make_tar_gz, set_metadata, get_datetime};
+    use crate::utils::{make_tar_gz, set_metadata, get_datetime, get_file_sz};
     use crate::record::Record;
     use crate::snapshot::PathPair;
 
@@ -127,6 +127,7 @@ pub mod rsync {
                         }
 
                         self.record.snapshot.add_entry(pathpair.clone(), self.snapshot_root_path.clone().unwrap(), mtime);
+                        self.record.size += get_file_sz(entry.path());
                     }
                 }
             }

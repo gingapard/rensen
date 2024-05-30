@@ -21,6 +21,20 @@ pub fn get_datetime() -> String {
         .to_string()
 }
 
+pub fn get_file_sz<P>(path: P) -> u64
+where 
+    P: AsRef<Path> 
+{
+    match fs::metadata(path) {
+        Ok(metadata) => {
+            return metadata.len()
+        }
+        _ => ()
+    }
+
+    0
+}
+
 /// Sets the metadata for $file according to $stat
 pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), Trap> {
 
