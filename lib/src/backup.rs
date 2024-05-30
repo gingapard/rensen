@@ -48,12 +48,12 @@ pub mod rsync {
         /// Returns last_modified_time from metadata in secs (as u64)
         pub fn local_file_mtime(&self, local_file: &Path) -> Result<u64, Trap> {
             let local_metadata = fs::metadata(local_file).map_err(|err| {
-                Trap::FS(
+                Trap::Metadata(
                     format!("Could not get metadata of local file: {}.\nMay be missing or corrupt!", err))
             })?;
 
             let local_modified = local_metadata.modified().map_err(|err| {
-                Trap::FS(format!("Could not get mod time of local file: {}", err))
+                Trap::Metadata(format!("Could not get mod time of local file: {}", err))
             })?;
 
             Ok(local_modified.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())
@@ -62,11 +62,11 @@ pub mod rsync {
         /// Wrapper for SFTP::stat
         pub fn remote_filestat(&self, remote_file: &Path) -> Result<FileStat, Trap> {
             let sftp = self.sess.as_ref().ok_or(Trap::FS(String::from("Session unavailable")))?.sftp().map_err(|err| {
-                Trap::FS(format!("Could not init SFTP session: {}", err))
+                Trap::Session(format!("Could not init SFTP session: {}", err))
             })?;
 
             let stat = sftp.stat(remote_file).map_err(|err| {
-                Trap::FS(
+                Trap::Metadata(
                     format!("Could not get metadata of remote file: {}\nMay be missing or corrupt!", err))
             })?;
 
@@ -392,6 +392,7 @@ pub mod rsync {
            /*---------------------------------------------------------------------------*
             * Starting proceess of copying the file from remote to locally, also ensuring*
             * metadata and permissons of the the file.                                  *
+            * Need to be run in sudo if it is going to write in /
             *---------------------------------------------------------------------------*/
 
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(source).map_err(|err| {
@@ -414,7 +415,7 @@ pub mod rsync {
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(err) => {
-                        return Err(Trap::FS(format!("Could not read from channel: {}", err)));
+                        return Err(Trap::Channel(format!("Could not read from channel: {}", err)));
                     }
                 }
             }

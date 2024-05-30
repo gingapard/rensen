@@ -12,16 +12,12 @@ use crate::snapshot::*;
 /// A record storing the data for precompressed files.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
-    pub interval_n: u8,
-    pub intervals: Vec<PathBuf>,
     pub snapshot: Snapshot,
 }
 
 impl Record {
     pub fn new() -> Self {
         Record {
-            interval_n: 0,
-            intervals: Vec::new(),
             snapshot: Snapshot::new(),
         }
     }
@@ -29,7 +25,7 @@ impl Record {
 
 impl Display for Record {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "Record {{\n\tinterval_n: {},\n\tintervals: {:?},\n\tsnapshot: {}\n\t}}", self.interval_n, self.intervals, self.snapshot)
+        write!(f, "\tsnapshot: {}\n\t", self.snapshot)
     }
 }
 

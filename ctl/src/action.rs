@@ -91,7 +91,7 @@ impl Action {
         let hostname = &self.operands[0];
 
         let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize settings: {}", err)))?;
 
         // checking if the hostname is taken
         for host in settings.hosts.iter() {
@@ -157,7 +157,7 @@ impl Action {
         settings.hosts.push(Host { hostname: hostname.clone(), config: host_config  });
 
         let _ = settings.serialize_yaml(hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not serialize yaml: {}", err)))?;
+            .map_err(|err| Trap::Serialize(format!("Could not serialize yaml: {}", err)))?;
 
         Ok(())
     }
@@ -178,7 +178,7 @@ impl Action {
 
         // Global host-settings for rensen
         let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize settings: {}", err)))?;
         
         // Removing host from the settings by extractin it's index
         for (i, host) in settings.hosts.iter().enumerate() {
@@ -190,7 +190,7 @@ impl Action {
 
         // Writing it back to the file
         settings.serialize_yaml(&hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
+            .map_err(|err| Trap::Serialize(format!("Could not serialize settings: {}", err)))?;
 
         println!("Deleted `{}`", hostname);
 
@@ -205,7 +205,7 @@ impl Action {
         let style = Style::new();
 
         let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize settings: {}", err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize settings: {}", err)))?;
 
         // Gettings the host_config
         let host_config = match settings.associated_config(&hostname) {
@@ -266,7 +266,7 @@ impl Action {
                             Ok(port) => port,
                             Err(err) => {
                                 return Err(
-                                    Trap::ReadInput(format!("Could not read input: {}", err))
+                                    Trap::InvalidInput(format!("Invalid input, plese provide interger value(u16): {}", err))
                                 );
                             }
                         }
@@ -305,7 +305,7 @@ impl Action {
         // Pushes new_host to settings.hosts and serializes to path
         settings.hosts.push(Host { hostname: hostname.to_string(), config: new_host_config });
         settings.serialize_yaml(&self.global_config.hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not serialize settings: {}", err)))?;
+            .map_err(|err| Trap::Serialize(format!("Could not serialize settings: {}", err)))?;
 
         Ok(())
     }
@@ -325,7 +325,7 @@ impl Action {
         let hostname = &self.operands[0];
 
         let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
 
         let host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
@@ -360,7 +360,7 @@ impl Action {
         // Printing hostnames of all hosts if the `list` action is pure
         if self.operands.len() == 0 {
             let settings: Settings = Settings::deserialize_yaml(&self.global_config.hosts_path)
-                .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", &self.global_config.hosts_path, err)))?;
+                .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", &self.global_config.hosts_path, err)))?;
 
             let style = console::Style::new();
             println!("{}", style.clone().bold().apply_to("Hosts:"));
@@ -409,7 +409,7 @@ impl Action {
 
         // Gettings the Settings
         let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
 
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
@@ -438,7 +438,7 @@ impl Action {
 
         // Gettings the Settings
         let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
 
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
@@ -510,7 +510,7 @@ impl Action {
 
         print!("Reading record... ");
         let record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::FS(format!("Could not read record {:?}: {}", record_path, err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not read record {:?}: {}", record_path, err)))?;
         println!("Done");
 
         let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);

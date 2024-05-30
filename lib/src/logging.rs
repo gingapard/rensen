@@ -9,7 +9,6 @@ use crate::config::GlobalConfig;
 #[derive(Debug)]
 pub enum Trap {
 
-    // rensen lib
     STD(String),
     Connect(String),
     Session(String),
@@ -21,15 +20,13 @@ pub enum Trap {
     Config(String),
     Copy(String),
     Missing(String),
-
-    // ctl
     InvalidInput(String),
-    ReadInput(String)
-}
+    ReadInput(String),
+    Deserialize(String),
+    Serialize(String),
+    Metadata(String),
 
-pub enum LogStatus {
-    Success,
-    Error,
+
 }
 
 pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
@@ -47,6 +44,9 @@ pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
         Trap::Missing(msg)      => format!("Missing: {}", msg),
         Trap::InvalidInput(msg) => format!("Invalid: {}", msg),
         Trap::ReadInput(msg)    => format!("ReadInput: {}", msg),
+        Trap::Serialize(msg)    => format!("Serialize: {}", msg),
+        Trap::Deserialize(msg)  => format!("Deserialize: {}", msg),
+        Trap::Metadata(msg)     => format!("Metadata: {}", msg),
     };
     
     // Opening log file
@@ -73,4 +73,3 @@ pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
 
     error!("{}", trap_msg);
 }
-
