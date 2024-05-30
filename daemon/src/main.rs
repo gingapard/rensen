@@ -4,16 +4,14 @@ use rensen_lib::traits::*;
 use rensen_lib::logging::*;
 
 pub mod daemon;
-use crate::daemon::RensenDaemon;
+use crate::daemon::*;
 
 use std::thread;
+use cron::Schedule;
 use std::sync::Arc;
 use std::path::{PathBuf, Path};
-
-#[derive(Debug)]
-struct RensenSchedule {
-    pub schedules: Vec<String>,
-}
+use std::str::FromStr;
+use tokio::sync::{Mutex, MutexGuard};
 
 #[tokio::main]
 async fn main() -> Result<(), Trap>  {
@@ -25,21 +23,29 @@ async fn main() -> Result<(), Trap>  {
     let settings = Settings::deserialize_yaml(&global_config.backupping_path)
         .map_err(|err| Trap::FS(format!("Could not deserialize Settings @ {:?}: {}", global_config.backupping_path, err)))?;
 
+    let mut schedules: Vec<Arc<Mutex<HostSchedule>>> = Vec::new();
     for host in settings.hosts.iter() {
-
+        if let Some(cron_schedule) = host.config.cron_schedule {
+            match Schedule::from_str(cron_schedule.as_str()) {
+                Ok(schedule) => {
+                   schedules.push(Arc::new(Mutex::new(HostSchedule {
+                       host: host.clone(),
+                       schedule,
+                   })));
+                },
+                Err(err) => {
+                    log_trap(&global_config, &Trap::InvalidInput(format!("Invalid Cron Expression for `{}`: {}", host.hostname, err)));
+                }
+            }
+        }
+        else {
+            log_trap(&global_config, &Trap::Missing(format!("Missing cron_schedule for `{}`: Defaulting to `0 0 * * *`", &host.hostname)));
+            continue;
+        }
     }
 
-    /*
-    let host = &settings.hosts[1];
-
-    let schedule = Schedule::from_str(&host.config.cron_schedule.clone().unwrap_or(String::from("0 0 * * *")))
-        .map_err(|err| Trap::InvalidInput(format!("Failed to init scheduler: {}", err)))?;
-
-    let schedule = Arc::new(Mutex::new(schedule));
-    let rensen_daemon = RensenDaemon::from(global_config, host.clone(), schedule);
-
-    let _ = rensen_daemon.run_scheduler().await;
-    */
+    let rensen_daemon = RensenDaemon::from(global_config, settings, schedules);
+    rensen_daemon.run_scheduler().await;
 
     Ok(())
 }
