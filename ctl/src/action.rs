@@ -150,7 +150,6 @@ impl Action {
         let cron_schedule = get_input("backupping schedule (Cron expression): ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
-
         // Add Config to settings and serialize
         let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), cron_schedule.to_string());
         println!("{}", &host_config);

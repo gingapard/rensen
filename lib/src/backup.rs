@@ -14,7 +14,7 @@ pub mod rsync {
     use crate::snapshot::PathPair;
 
     pub struct Sftp<'a> {
-        pub host_config: &'a mut HostConfig,
+        pub host_config: &'a HostConfig,
         pub global_config: &'a GlobalConfig,
         pub record: Record,
         pub sess: Option<Session>,
@@ -29,7 +29,7 @@ pub mod rsync {
     }
 
     impl<'a> Sftp<'a> {
-        pub fn new(host_config: &'a mut HostConfig, global_config: &'a GlobalConfig, record: Record, debug: bool) -> Self {
+        pub fn new(host_config: &'a HostConfig, global_config: &'a GlobalConfig, record: Record, debug: bool) -> Self {
             Self {
                 host_config,
                 global_config,
