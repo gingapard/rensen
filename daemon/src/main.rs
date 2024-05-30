@@ -11,7 +11,7 @@ use cron::Schedule;
 use std::sync::Arc;
 use std::path::{PathBuf, Path};
 use std::str::FromStr;
-use tokio::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard};
 
 #[tokio::main]
 async fn main() -> Result<(), Trap>  {
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Trap>  {
 
     let mut schedules: Vec<Arc<Mutex<HostSchedule>>> = Vec::new();
     for host in settings.hosts.iter() {
-        if let Some(cron_schedule) = host.config.cron_schedule {
+        if let Some(cron_schedule) = &host.config.cron_schedule {
             match Schedule::from_str(cron_schedule.as_str()) {
                 Ok(schedule) => {
                    schedules.push(Arc::new(Mutex::new(HostSchedule {
@@ -44,8 +44,8 @@ async fn main() -> Result<(), Trap>  {
         }
     }
 
-    let rensen_daemon = RensenDaemon::from(global_config, settings, schedules);
-    rensen_daemon.run_scheduler().await;
+    let rensen_daemon = RensenDaemon::from(Arc::new(Mutex::new(global_config)), settings, schedules);
+    let _ = rensen_daemon.run_scheduler();
 
     Ok(())
 }
