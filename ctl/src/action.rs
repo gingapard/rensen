@@ -459,16 +459,21 @@ impl Action {
 
 
         let style = console::Style::new();
-        println!("{}", style.clone().bold().apply_to(format!("Snapshots ({}): ", hostname).as_str()));
+        println!("{}", style.clone().bold().apply_to(format!("{}: ", hostname).as_str()));
 
         for entry in entries {
 
             let entry = entry.unwrap();
+            let record = Record::deserialize_json(&entry.path())
+                .map_err(|err| Trap::Deserialize(format!("Could not deserialize record, size uavailable: {}", err)))?;
+
+            let mem_size: MemorySize = format_bytes(record.size);
+
             if let Some(file_stem) = entry.path().file_stem() {
 
                 // Filtering out the record.json file
                 if file_stem != "record" {
-                    println!("->  {}", style.clone().bold().blue().apply_to(file_stem.to_str().unwrap()));
+                    println!("->  {} {} {}", style.clone().bold().blue().apply_to(file_stem.to_str().unwrap()), mem_size.amount, mem_size.unit);
                 }
             }
 
@@ -503,7 +508,7 @@ impl Action {
         };
 
         // Formatting path
-        let record_path = host_config.destination
+        let record_path = self.global_config.backupping_path
             .join(&host_config.identifier)
             .join(".records")
             .join("record.json");
