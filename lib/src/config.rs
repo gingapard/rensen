@@ -55,7 +55,7 @@ impl YamlFile for GlobalConfig {
 }
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostConfig {
     pub user: String,
     pub identifier: String,        // machine addr
@@ -66,7 +66,7 @@ pub struct HostConfig {
     pub cron_schedule: Option<String>, // defualt `0 0 * * *`
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Host {
     pub hostname: String,
     pub config: HostConfig

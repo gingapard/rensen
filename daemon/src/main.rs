@@ -17,7 +17,7 @@ async fn main() -> Result<(), Trap>  {
     let global_config: GlobalConfig = GlobalConfig::deserialize_yaml(&global_config_path)
         .map_err(|err| Trap::FS(format!("Could not deserialize Global Config: {}", err)))?;
 
-    let settings = Settings::deserialize_yaml(&global_config.backupping_path)
+    let settings = Settings::deserialize_yaml(&global_config.hosts_path)
         .map_err(|err| Trap::FS(format!("Could not deserialize Settings @ {:?}: {}", global_config.backupping_path, err)))?;
 
     let mut schedules: Vec<Arc<HostSchedule>> = Vec::new();
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Trap>  {
             match Schedule::from_str(cron_schedule.as_str()) {
                 Ok(schedule) => {
                     schedules.push(Arc::new(HostSchedule {
-                        host: host.clone(),
+                        host: host.clone().into(),
                         schedule,
                     }));
                 },
@@ -41,6 +41,8 @@ async fn main() -> Result<(), Trap>  {
     }
 
     let backup_scheduler = BackupScheduler::from(Arc::new(global_config), settings, schedules);
+
+    println!("Starting scheduler ...");
     backup_scheduler.run_scheduler().await?;
 
     Ok(())

@@ -10,8 +10,9 @@ use tokio::time::{interval, Duration};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+#[derive(Debug)]
 pub struct HostSchedule {
-    pub host: Arc<Host>, // Change to Arc<Host>
+    pub host: Arc<Host>, 
     pub schedule: Schedule,
 }
 
@@ -66,20 +67,28 @@ impl BackupScheduler {
     /// when self.should_run() == true
     /// Will wait 60 seconds between each check
     pub async fn run_scheduler(&self) -> Result<(), Trap> {
-        let mut interval = interval(Duration::from_secs(60));
+        let mut interval = interval(Duration::from_secs(10));
+
+        println!("{:?}", self.schedules);
 
         loop {
             interval.tick().await;
+            println!("Checking");
             let now = Local::now();
+            println!("{}", now);
 
+            println!("reached");
             for host_schedule in self.schedules.iter() {
-                if self.should_run(&now, &host_schedule) {
+                println!("{:?}", host_schedule);
+                if self.should_run(&now, &host_schedule) == false {
+                    println!("should run");
                     let global_config_clone = Arc::clone(&self.global_config);
                     let host = Arc::clone(&host_schedule.host); 
 
                     // Spawning new thread as it's time for backupping
                     tokio::spawn(async move {
                         let backup_task = BackupTask { global_config: global_config_clone, host };
+                        println!("Running task...");
                         if let Err(err) = backup_task.run_backup_task().await {
                             log_trap(&backup_task.global_config, &err); 
                         }

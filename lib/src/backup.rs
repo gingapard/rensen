@@ -127,7 +127,6 @@ pub mod rsync {
                         }
 
                         self.record.snapshot.add_entry(pathpair.clone(), self.snapshot_root_path.clone().unwrap(), mtime);
-                        self.record.size += get_file_sz(entry.path());
                     }
                 }
             }
@@ -139,13 +138,18 @@ pub mod rsync {
             let _ = self.update_entries(base_path)?;
             let _ = self.update_deleted_entries()?;
 
+            // Count up total size
+            for entry in &self.record.snapshot.entries {
+                self.record.size += get_file_sz(&entry.1.file_path);
+            }
+
             Ok(())
         }
 
         /// Takes in a local_path, and returns it's remote path equvelent according to 'self'
         fn into_source(&self, current_path: &Path) -> Result<PathBuf, Trap> {
             let mut result = PathBuf::from(self.host_config.source.clone());
-            let current_path_components = current_path.components().collect::<Vec<_>>(); // destination/identifier/datetime/filestem/...
+            let current_path_components = current_path.components().collect::<Vec<_>>(); 
 
             // Extracting the common prefix between current_path and self.host_config.dest_path
             // This is so that it can remove the common prefix from the current_path, and replace
