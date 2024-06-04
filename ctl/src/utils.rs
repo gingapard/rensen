@@ -1,5 +1,6 @@
 use std::io::{self, Write, BufRead};
 use std::fmt;
+use std::path::PathBuf;
 
 pub fn get_input(prompt: &str) -> Result<String, io::Error> {
     print!("{}", prompt);
@@ -46,15 +47,15 @@ impl fmt::Display for ByteUnit {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct MemorySize {
+pub struct MemoryUsage {
     pub amount: f32,
     pub unit: ByteUnit
 }
 
-pub fn format_bytes(bytes: u64) -> MemorySize {
+pub fn format_bytes(bytes: u64) -> MemoryUsage { 
     let mut current_amount = bytes;
     let mut unit = 0;
-    let mut result: MemorySize = MemorySize { amount: 0.0, unit: ByteUnit::B };
+    let mut result: MemoryUsage = MemoryUsage { amount: 0.0, unit: ByteUnit::B };
 
     while current_amount > 1024 {
         current_amount /= 1024;
@@ -74,5 +75,11 @@ pub fn format_bytes(bytes: u64) -> MemorySize {
 #[test]
 fn test_format_bytes() {
     let bytes: u64 = 900012000;
-    assert_eq!(format_bytes(bytes), MemorySize { amount: 0.0, unit: ByteUnit::B });
+    assert_eq!(format_bytes(bytes), MemoryUsage { amount: 0.0, unit: ByteUnit::B });
+}
+
+pub fn sort_dates(dates: &mut Vec<PathBuf>) -> () {
+
+
+    ()
 }

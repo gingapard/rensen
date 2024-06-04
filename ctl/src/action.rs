@@ -7,6 +7,7 @@ use rensen_lib::compiler::Compiler;
 
 use console::Style;
 
+use std::time::SystemTime;
 use crate::utils::*;
 
 use std::path::PathBuf;
@@ -380,7 +381,7 @@ impl Action {
         }
 
         // checking the list method, either listing `snapshots` or `config`
-        let list_method = match self.operands[0].to_lowercase().as_str() {
+        let list_method = match self.operands[1].to_lowercase().as_str() {
             "snapshots" | "s" | "snap" => ListMethod::Snapshots,
                "config" | "c" | "conf" => ListMethod::Config,
             _ => return Err(Trap::InvalidInput(format!("List Method: `{}` is not recognized in this action", self.operands[0])))
@@ -405,7 +406,7 @@ impl Action {
 
 
         let hosts = &self.global_config.hosts;
-        let hostname = &self.operands[1];
+        let hostname = &self.operands[0];
 
         // Gettings the Settings
         let settings: Settings = Settings::deserialize_yaml(hosts)
@@ -434,7 +435,7 @@ impl Action {
         }
 
         let hosts = &self.global_config.hosts;
-        let hostname = &self.operands[1];
+        let hostname = &self.operands[0];
 
         // Gettings the Settings
         let settings: Settings = Settings::deserialize_yaml(hosts)
@@ -457,6 +458,16 @@ impl Action {
                 format!("Could not read directory at: `{:?}`: {}", dir_path, err)))
         };
 
+        let mut entries_sorted_by_date: Vec<_> = entries
+            .map(|entry| {
+                entry.map(|e| {
+                    e.metadata().and_then(|m| m.modified()).map(|t| (e, t))
+                })
+            })
+            .filter_map(|entry| entry.ok())
+            .collect();
+
+        entries_sorted_by_date.sort_by(|a, b| a.unwrap().1.cmp(&b.unwrap().1));
 
         let style = console::Style::new();
         println!("{}", style.clone().bold().apply_to(format!("{}: ", hostname).as_str()));
@@ -467,7 +478,7 @@ impl Action {
             let record = Record::deserialize_json(&entry.path())
                 .map_err(|err| Trap::Deserialize(format!("Could not deserialize record, size uavailable: {}", err)))?;
 
-            let mem_size: MemorySize = format_bytes(record.size);
+            let mem_size: MemoryUsage = format_bytes(record.size);
 
             if let Some(file_stem) = entry.path().file_stem() {
 
