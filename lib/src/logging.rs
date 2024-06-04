@@ -50,14 +50,14 @@ pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
     };
     
     // Opening log file
-    if !Path::new(&global_config.log_path).exists() {
-        let _ = File::create(&global_config.log_path);
+    if !Path::new(&global_config.log).exists() {
+        let _ = File::create(&global_config.log);
     }
 
     let mut file = match OpenOptions::new()
         .write(true)
         .append(true)
-        .open(&global_config.log_path) {
+        .open(&global_config.log) {
             Ok(file) => file,
             Err(_) => {
                 println!("Hey! you should run this program as sudo if you expect the logging to work.");
@@ -68,7 +68,7 @@ pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
     let current_time = get_datetime();
 
     if let Err(err) = writeln!(file, "[{}] {}", current_time, trap_msg) {
-        eprintln!("Problems writing to log file `{:?}`. Please check permissions: {}", &global_config.log_path, err);
+        eprintln!("Problems writing to log file `{:?}`. Please check permissions: {}", &global_config.log, err);
     }
 
     error!("{}", trap_msg);

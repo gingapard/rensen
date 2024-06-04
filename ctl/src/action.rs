@@ -87,10 +87,10 @@ impl Action {
             );
         }
 
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
         let hostname = &self.operands[0];
 
-        let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
+        let mut settings: Settings = Settings::deserialize_yaml(&hosts)
             .map_err(|err| Trap::Deserialize(format!("Could not deserialize settings: {}", err)))?;
 
         // checking if the hostname is taken
@@ -132,7 +132,7 @@ impl Action {
         };
 
         // Read key-path
-        let key_path = get_input("ssh-key path: ")
+        let key= get_input("ssh-key path: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
@@ -151,12 +151,12 @@ impl Action {
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
         // Add Config to settings and serialize
-        let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key_path), PathBuf::from(source), PathBuf::from(destination), cron_schedule.to_string());
+        let host_config = HostConfig::from(user.to_string(), identifier.to_string(), port, PathBuf::from(key), PathBuf::from(source), PathBuf::from(destination), cron_schedule.to_string());
         println!("{}", &host_config);
 
         settings.hosts.push(Host { hostname: hostname.clone(), config: host_config  });
 
-        let _ = settings.serialize_yaml(hosts_path)
+        let _ = settings.serialize_yaml(hosts)
             .map_err(|err| Trap::Serialize(format!("Could not serialize yaml: {}", err)))?;
 
         Ok(())
@@ -174,10 +174,10 @@ impl Action {
         }
         
         let hostname = &self.operands[0];
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
 
         // Global host-settings for rensen
-        let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
+        let mut settings: Settings = Settings::deserialize_yaml(&hosts)
             .map_err(|err| Trap::Deserialize(format!("Could not deserialize settings: {}", err)))?;
         
         // Removing host from the settings by extractin it's index
@@ -189,7 +189,7 @@ impl Action {
         }
 
         // Writing it back to the file
-        settings.serialize_yaml(&hosts_path)
+        settings.serialize_yaml(&hosts)
             .map_err(|err| Trap::Serialize(format!("Could not serialize settings: {}", err)))?;
 
         println!("Deleted `{}`", hostname);
@@ -200,11 +200,11 @@ impl Action {
     /* mod action */
 
     fn mod_host(&self) -> Result<(), Trap> {
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
         let hostname = &self.operands[0];
         let style = Style::new();
 
-        let mut settings: Settings = Settings::deserialize_yaml(&hosts_path)
+        let mut settings: Settings = Settings::deserialize_yaml(&hosts)
             .map_err(|err| Trap::Deserialize(format!("Could not deserialize settings: {}", err)))?;
 
         // Gettings the host_config
@@ -228,7 +228,7 @@ impl Action {
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?.trim().to_string();
 
         // Read key-path
-        let key_path = get_input("ssh-key path: ")
+        let key = get_input("ssh-key path: ")
             .map_err(|err| Trap::ReadInput(format!("Could not read input: {}", err)))?
             .trim().to_string();
 
@@ -273,9 +273,9 @@ impl Action {
                     }
                 }
             },
-            match key_path.len() {
-                0 => host_config.key_path.unwrap_or("".into()).to_owned(),
-                _ => PathBuf::from(&key_path), 
+            match key.len() {
+                0 => host_config.key.unwrap_or("".into()).to_owned(),
+                _ => PathBuf::from(&key), 
             },
             match source.len() {
                 0 => host_config.source.to_owned(),
@@ -304,7 +304,7 @@ impl Action {
 
         // Pushes new_host to settings.hosts and serializes to path
         settings.hosts.push(Host { hostname: hostname.to_string(), config: new_host_config });
-        settings.serialize_yaml(&self.global_config.hosts_path)
+        settings.serialize_yaml(&self.global_config.hosts)
             .map_err(|err| Trap::Serialize(format!("Could not serialize settings: {}", err)))?;
 
         Ok(())
@@ -321,11 +321,11 @@ impl Action {
             );
         }
 
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
         let hostname = &self.operands[0];
 
-        let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+        let settings: Settings = Settings::deserialize_yaml(hosts)
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
         let host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
@@ -340,14 +340,14 @@ impl Action {
             snapshot = String::from("record");
         }
 
-        let snapshot_record_path = self.global_config.backupping_path
+        let snapshot_record_path = self.global_config.backups
             .join(host_config.identifier)
             .join(".records")
             .join(format!("{}.json", snapshot.trim()));
 
         /* Compiling snapshot */
         let mut compiler = Compiler::from(&snapshot_record_path)?;
-        compiler.compile(&self.global_config.snapshots_path)?;
+        compiler.compile(&self.global_config.snapshots)?;
         let _ = compiler.cleanup();
 
         Ok(())
@@ -359,8 +359,8 @@ impl Action {
 
         // Printing hostnames of all hosts if the `list` action is pure
         if self.operands.len() == 0 {
-            let settings: Settings = Settings::deserialize_yaml(&self.global_config.hosts_path)
-                .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", &self.global_config.hosts_path, err)))?;
+            let settings: Settings = Settings::deserialize_yaml(&self.global_config.hosts)
+                .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", &self.global_config.hosts, err)))?;
 
             let style = console::Style::new();
             println!("{}", style.clone().bold().apply_to("Hosts:"));
@@ -404,12 +404,12 @@ impl Action {
         }
 
 
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
         let hostname = &self.operands[1];
 
         // Gettings the Settings
-        let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+        let settings: Settings = Settings::deserialize_yaml(hosts)
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
@@ -433,12 +433,12 @@ impl Action {
             );
         }
 
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
         let hostname = &self.operands[1];
 
         // Gettings the Settings
-        let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+        let settings: Settings = Settings::deserialize_yaml(hosts)
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
@@ -446,7 +446,7 @@ impl Action {
             None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
         };
 
-        let dir_path = self.global_config.backupping_path
+        let dir_path = self.global_config.backups
             .join(host_config.identifier)
             .join(".records");
 
@@ -494,12 +494,12 @@ impl Action {
             );
         }
 
-        let hosts_path = &self.global_config.hosts_path;
+        let hosts = &self.global_config.hosts;
         let hostname = &self.operands[0];
 
         // Opening the settings file for all hosts
-        let settings: Settings = Settings::deserialize_yaml(hosts_path)
-            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts_path, err)))?;
+        let settings: Settings = Settings::deserialize_yaml(hosts)
+            .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
         // Gettings the host config associated with hostname
         let mut host_config = match settings.associated_config(&hostname) {
@@ -508,7 +508,7 @@ impl Action {
         };
 
         // Formatting path
-        let record_path = self.global_config.backupping_path
+        let record_path = self.global_config.backups
             .join(&host_config.identifier)
             .join(".records")
             .join("record.json");

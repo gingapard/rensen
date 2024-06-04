@@ -11,19 +11,19 @@ use traits::YamlFile;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GlobalConfig {
-    pub hosts_path: PathBuf,
-    pub backupping_path: PathBuf,
-    pub snapshots_path: PathBuf,
-    pub log_path: PathBuf,
+    pub hosts: PathBuf,
+    pub backups: PathBuf,
+    pub snapshots: PathBuf,
+    pub log: PathBuf,
 }
 
 #[test]
 fn test_global_config_serialize() {
     let gc = GlobalConfig {
-        hosts_path: PathBuf::from("/etc/rensen/hosts.yml"),
-        backupping_path: PathBuf::from("/home/dto/bakcups/"),
-        snapshots_path: PathBuf::from("/etc/rensen/hosts.yml"),
-        log_path: PathBuf::from("/etc/rensen/log"),
+        hosts: PathBuf::from("/etc/rensen/hosts.yml"),
+        backups: PathBuf::from("/home/dto/bakcups/"),
+        snapshots: PathBuf::from("/etc/rensen/hosts.yml"),
+        log: PathBuf::from("/etc/rensen/log"),
     };
 
     let path = PathBuf::from("gc.yml");
@@ -60,7 +60,7 @@ pub struct HostConfig {
     pub user: String,
     pub identifier: String,        // machine addr
     pub port: Option<u16>,         // default: 22
-    pub key_path: Option<PathBuf>, // default: "$HOME/.ssh/ed25516"
+    pub key: Option<PathBuf>, // default: "$HOME/.ssh/ed25516"
     pub source: PathBuf,
     pub destination: PathBuf,
     pub cron_schedule: Option<String>, // defualt `0 0 * * *`
@@ -82,7 +82,7 @@ impl HostConfig {
         user: String,
         identifier: String,
         port: u16,
-        key_path: PathBuf,
+        key: PathBuf,
         source: PathBuf,
         destination: PathBuf,
         cron_schedule: String
@@ -91,7 +91,7 @@ impl HostConfig {
             user,
             identifier,
             port: Some(port),
-            key_path: Some(key_path),
+            key: Some(key),
             source,
             destination,
             cron_schedule: Some(cron_schedule),
@@ -107,7 +107,7 @@ impl fmt::Display for HostConfig {
             self.identifier,
             self.user,
             self.port.unwrap_or(22),
-            self.key_path
+            self.key
                 .as_ref()
                 .map(|path| path.display().to_string())
                 .unwrap_or_else(|| "$HOME/.ssh/ed25516".to_string()),

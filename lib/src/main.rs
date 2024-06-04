@@ -11,8 +11,7 @@ pub use traits::{Rsync, JsonFile, YamlFile};
 
 pub use config::*;
 
-pub use record::Record;
-use std::{env, net, io::Result, path::{Path, PathBuf}, error};
+pub use record::Record; use std::{env, net, io::Result, path::{Path, PathBuf}, error};
 // use std::collections::HashMap;
 use env_logger;
 

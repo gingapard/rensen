@@ -212,7 +212,7 @@ pub mod rsync {
             let source = &self.host_config.source;
 
             // $HOME/destination/$identifier
-            self.host_root_path = Some(self.global_config.backupping_path
+            self.host_root_path = Some(self.global_config.backups
                 .join(&self.host_config.identifier));
 
             // $HOME/destination/$identifier/$datetime
@@ -281,7 +281,7 @@ pub mod rsync {
 
             // key path
             let default_key_path = "$HOME/.ssh/ed25519";
-            let key_path = self.host_config.key_path.as_ref()
+            let key_path = self.host_config.key.as_ref()
                 .map(|s| s.to_str().unwrap_or(default_key_path))
                 .unwrap_or(default_key_path);
 
