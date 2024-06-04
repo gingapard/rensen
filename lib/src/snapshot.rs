@@ -1,11 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, BTreeSet};
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
+use std::cmp::Ordering;
 use std::fmt::{Display, Result, Formatter};
 
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PathBufx { pub file_path: PathBuf, 
+pub struct PathBufx {
+    pub file_path: PathBuf, 
     pub snapshot_path: PathBuf, // root path (no extension)
     pub mtime: u64,
 }
@@ -45,15 +47,26 @@ impl PathPair {
     }
 }
 
+// Implementing PartialOrd and Ord for PathPair
+impl Ord for PathPair {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.source.cmp(&other.source)
+    }
+}
+
+impl PartialOrd for PathPair {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// Entries containing the mtime of files.
 /// Using the source path as key, we can get data.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Snapshot {
     pub entries: HashMap<PathBuf, PathBufx>,
-    pub deleted_entries: HashSet<PathPair>
+    pub deleted_entries: BTreeSet<PathPair>,
 }
-
-// TODO: Stop using HashSet, and start using a Binary Tree instead
 
 impl Display for Snapshot {
     fn fmt(&self, f: &mut Formatter) -> Result {
@@ -62,15 +75,19 @@ impl Display for Snapshot {
 }
 
 impl Snapshot {
-    pub fn new() -> Self {
+    pub fn new(cap: usize) -> Self {
         Snapshot {
-            entries: HashMap::new(),
-            deleted_entries: HashSet::new(),
+            entries: HashMap::with_capacity(cap),
+            deleted_entries: BTreeSet::new(),
         }
     }
 
     pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: PathBuf, mtime: u64) {
-        self.entries.insert(pathpair.source, PathBufx::from(pathpair.destination, snapshot_path, mtime));
+        self.entries.insert(
+            pathpair.source.clone(), 
+            PathBufx::from(pathpair.destination.clone(), snapshot_path, mtime)
+        );
+        self.deleted_entries.remove(&pathpair);
     }
 
     pub fn mark_as_deleted(&mut self, pair: PathPair) {
@@ -88,19 +105,10 @@ impl Snapshot {
 
     /// returns the mtime entry matching key
     pub fn mtime(&self, key: &PathBuf) -> Option<&u64> {
-        if let Some(entry) = &self.entries.get(key) {
-            return Some(&entry.mtime)
-        }
-
-        None
+        self.entries.get(key).map(|entry| &entry.mtime)
     }
 
     pub fn path(&self, key: &PathBuf) -> Option<&PathBuf> {
-        if let Some(entry) = &self.entries.get(key) {
-            return Some(&entry.file_path);
-        }
-
-        None
+        self.entries.get(key).map(|entry| &entry.file_path)
     }
 }
-

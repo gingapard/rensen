@@ -404,7 +404,6 @@ impl Action {
             );
         }
 
-
         let hosts = &self.global_config.hosts;
         let hostname = &self.operands[0];
 
