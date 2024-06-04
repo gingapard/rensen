@@ -115,9 +115,9 @@ pub mod rsync {
                         self.update_record(&current_path)?;
                     } else {
 
-                        let source = self.into_source(&current_path)?;
-                        let mtime = self.local_file_mtime(&current_path)?;
-                        let pathpair = PathPair::from(source, current_path);
+                        // TODO: MULTITHREADING
+                        println!("Adding to record: {:?}", current_path);
+                        let source = self.into_source(&current_path)?; let mtime = self.local_file_mtime(&current_path)?; let pathpair = PathPair::from(source, current_path);
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
@@ -126,6 +126,7 @@ pub mod rsync {
                             self.record.snapshot.undelete(&pathpair);
                         }
 
+                        println!("{:?}", pathpair.destination);
                         self.record.snapshot.add_entry(pathpair.clone(), self.snapshot_root_path.clone().unwrap(), mtime);
                     }
                 }
@@ -383,6 +384,8 @@ pub mod rsync {
 
         /// Copy remote file (source) to destination.
         fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), Trap> {
+            // TODO: MULTITHREADING
+
             if self.incremental {
                 // check mtime data at local and source
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
@@ -403,6 +406,7 @@ pub mod rsync {
             let (mut channel, _) = self.sess.as_ref().unwrap().scp_recv(source).map_err(|err| {
                 Trap::Copy(format!("Could not receive file from remote path: {}", err))
             })?;
+
 
             let mut file = fs::File::create(destination).map_err(|err| {
                 Trap::FS(format!("Could not create file: {}\nCheck permissions!", err))

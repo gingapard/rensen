@@ -53,6 +53,8 @@ pub struct Snapshot {
     pub deleted_entries: HashSet<PathPair>
 }
 
+// TODO: Stop using HashSet, and start using a Binary Tree instead
+
 impl Display for Snapshot {
     fn fmt(&self, f: &mut Formatter) -> Result {
         write!(f, "Snapshot: {{\n\tentries: {:?},\n\tdeleted_entries: {:?}\n\t\n}}", self.entries, self.deleted_entries)

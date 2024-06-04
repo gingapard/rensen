@@ -467,19 +467,19 @@ impl Action {
             .filter_map(|entry| entry.ok())
             .collect();
 
-        entries_sorted_by_date.sort_by(|a, b| a.unwrap().1.cmp(&b.unwrap().1));
+        entries_sorted_by_date.sort_by(|a, b| a.as_ref().unwrap().1.cmp(&b.as_ref().unwrap().1));
 
         let style = console::Style::new();
         println!("{}", style.clone().bold().apply_to(format!("{}: ", hostname).as_str()));
 
-        for entry in entries {
+        for entry in entries_sorted_by_date {
+            
+            let entry = entry.unwrap().0;
 
-            let entry = entry.unwrap();
             let record = Record::deserialize_json(&entry.path())
                 .map_err(|err| Trap::Deserialize(format!("Could not deserialize record, size uavailable: {}", err)))?;
 
             let mem_size: MemoryUsage = format_bytes(record.size);
-
             if let Some(file_stem) = entry.path().file_stem() {
 
                 // Filtering out the record.json file
