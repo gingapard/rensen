@@ -1,0 +1,5 @@
+---
+hosts_path: /etc/rensen/hosts.yml
+backupping_path: /etc/rensen/backups
+snapshots_path: /etc/rensen/snapshots
+log_path: /etc/rensen/log

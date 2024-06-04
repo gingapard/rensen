@@ -22,17 +22,11 @@ async fn main() -> Result<(), Trap>  {
     let mut schedules: Vec<Arc<HostSchedule>> = Vec::new();
     for host in settings.hosts.iter() {
         if let Some(cron_schedule) = &host.config.cron_schedule {
-            println!("{:?}", cron_schedule);
-            match Schedule::from_str(cron_schedule.as_str()) {
+            match Schedule::from_str(cron_schedule) {
                 Ok(schedule) => {
-                    println!("sch: {:?}", schedule);
                     
-                    let host_schedule = Arc::new(HostSchedule {
-                        host: host.clone().into(),
-                        schedule,
-                    });
+                    let host_schedule = Arc::new(HostSchedule { host: host.clone().into(), schedule, });
                     
-                    println!("{:?}", host_schedule);
                     schedules.push(host_schedule);
                 },
                 Err(err) => {
@@ -43,7 +37,7 @@ async fn main() -> Result<(), Trap>  {
             log_trap(&global_config, &Trap::Missing(format!("Missing cron_schedule for `{}`: Defaulting to `0 0 * * *`", &host.hostname)));
             let host_schedule = Arc::new(HostSchedule {
                 host: host.clone().into(),
-                schedule: Schedule::from_str("0 0 * * *").unwrap(),
+                schedule: Schedule::from_str("* 0 0 * * * *").unwrap(),
             });
 
             schedules.push(host_schedule);
@@ -51,15 +45,20 @@ async fn main() -> Result<(), Trap>  {
         }
     }
 
-    println!("{:?}", schedules);
-
-    // let backup_scheduler = BackupScheduler::from(Arc::new(global_config), settings, schedules);
-
-    
-
-    println!("Starting scheduler ...");
-    //backup_scheduler.run_scheduler().await?;
+    let backup_scheduler = BackupScheduler::from(Arc::new(global_config), settings, schedules);
+    backup_scheduler.run_scheduler().await?;
 
     Ok(())
 }
+
+#[cfg(test)]
+#[test]
+fn test_cron() {
+    let cron_str = "* 0 0 * * * *";
+    let schedule = Schedule::from_str(cron_str).unwrap();
+}
+
+
+
+
 

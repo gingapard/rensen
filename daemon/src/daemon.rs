@@ -73,22 +73,16 @@ impl BackupScheduler {
 
         loop {
             interval.tick().await;
-            println!("Checking");
             let now = Local::now();
-            println!("{}", now);
 
-            println!("reached");
             for host_schedule in self.schedules.iter() {
-                println!("{:?}", host_schedule);
                 if self.should_run(&now, &host_schedule) == false {
-                    println!("should run");
                     let global_config_clone = Arc::clone(&self.global_config);
                     let host = Arc::clone(&host_schedule.host); 
 
                     // Spawning new thread as it's time for backupping
                     tokio::spawn(async move {
                         let backup_task = BackupTask { global_config: global_config_clone, host };
-                        println!("Running task...");
                         if let Err(err) = backup_task.run_backup_task().await {
                             log_trap(&backup_task.global_config, &err); 
                         }
