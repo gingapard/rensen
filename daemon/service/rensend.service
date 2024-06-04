@@ -1,9 +1,9 @@
 [Unit]
-Description=Renen Backup Sentinel
+Description=Rensen Backup Sentinel
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/rensen
+ExecStart=/usr/bin/rensend
 Restart=always
 User=root
 RestartSec=60
