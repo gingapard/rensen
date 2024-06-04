@@ -1,5 +1,18 @@
+# Global Configuration file for rensen.
+# Most of the settings in this file, will prefer to not be changed.
+# Therefor, only change what is needed.
+
 ---
+# Path to where config for hosts will be put. Rensen will automatically
+# generate these configs with the ctl, so do not touch if you don't
+# want complications.
 hosts_path: /etc/rensen/hosts.yml
+
+# Path to where all backupped files with be stored. 
 backupping_path: /etc/rensen/backups
+
+# Path for storing complete/compiled snapshots
 snapshots_path: /etc/rensen/snapshots
+
+# log file
 log_path: /etc/rensen/log

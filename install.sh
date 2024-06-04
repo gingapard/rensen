@@ -1,3 +1,5 @@
+sudo apt install libssl-dev
+
 cargo build --manifest-path daemon/Cargo.toml --release
 sudo cp daemon/target/release/rensend /usr/bin/rensend
 sudo cp daemon/service/rensend.service /etc/systemd/system/rensend.service
