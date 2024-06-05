@@ -4,12 +4,15 @@ pub mod rsync {
     use std::net::TcpStream;
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
-    use std::path::{Path, PathBuf}; use std::ffi::OsStr; use crate::traits::*;
+    use std::path::{Path, PathBuf}; 
+    use std::ffi::OsStr;
+    use std::rc::Rc;
+    use crate::traits::*;
     use crate::logging::Trap;
     use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime, get_file_sz};
     use crate::record::Record;
-    use crate::snapshot::PathPair;
+    use crate::snapshot::{PathPair, PathBufx, Snapshot};
 
     pub struct Sftp<'a> {
         pub host_config: &'a HostConfig,
@@ -100,6 +103,11 @@ pub mod rsync {
         }
 
         pub fn update_entries(&mut self, dir_path: &PathBuf) -> Result<(), Trap> {
+            
+            // let snapshot_root_path = Rc::from(self.snapshot_root_path.clone().unwrap());
+            let snapshot_root_path = self.snapshot_root_path.clone().unwrap();
+            let mut snapshot = Snapshot::new();
+
             if let Ok(entries) = fs::read_dir(dir_path) {
                 for entry in entries {
                     let entry = match entry {
@@ -117,7 +125,6 @@ pub mod rsync {
                         let source = self.into_source(&current_path)?; 
                         let mtime = self.local_file_mtime(&current_path)?; 
                         println!("Adding to record: {:?}, {}", current_path, mtime);
-                        let pathpair = PathPair::from(source, current_path);
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
@@ -127,10 +134,13 @@ pub mod rsync {
                             self.record.snapshot.undelete(&pathpair);
                         */
 
-                        self.record.snapshot.add_entry(pathpair.clone(), self.snapshot_root_path.clone().unwrap(), mtime);
+                        // self.record.snapshot.entries.insert(source, PathBufx::from(current_path, snapshot_root_path, mtime));
+                        snapshot.entries.insert(source, PathBufx { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime});
                     }
                 }
             }
+
+            self.record.snapshot = snapshot;
 
             Ok(())
         }
@@ -247,8 +257,9 @@ pub mod rsync {
             }
 
             // Serializeing records
+            print!("Serilizing records... ");
             let _ = self.record.serialize_json(&record_dir_path.join("record.json"));
-
+            println!("Done");
 
             let snapshot_root_path_binding = self.snapshot_root_path.clone().unwrap();
             let snapshot_root_file_stem = match snapshot_root_path_binding.file_name() {

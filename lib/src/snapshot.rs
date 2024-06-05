@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Result, Formatter};
 use fxhash::FxHashMap;
+use std::rc::Rc;
 use std::thread;
 
 /// Wrapper for PathBuf holding its mtime as u64
@@ -84,13 +85,11 @@ impl Snapshot {
         }
     }
 
-    // TODO: Fix insertion bottleneck
-    pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: PathBuf, mtime: u64) {
+    pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: Rc<PathBuf>, mtime: u64) {
         self.entries.insert(
-            pathpair.source.clone(), 
-            PathBufx::from(pathpair.destination.clone(), snapshot_path, mtime)
+            pathpair.source, 
+            PathBufx::from(pathpair.destination, Rc::try_unwrap(snapshot_path).unwrap().to_path_buf(), mtime)
         );
-        self.deleted_entries.remove(&pathpair);
     }
 
     pub fn mark_as_deleted(&mut self, pair: PathPair) {
