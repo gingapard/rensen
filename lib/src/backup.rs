@@ -4,9 +4,7 @@ pub mod rsync {
     use std::net::TcpStream;
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
-    use std::path::{Path, PathBuf};
-    use std::ffi::OsStr;
-    use crate::traits::*;
+    use std::path::{Path, PathBuf}; use std::ffi::OsStr; use crate::traits::*;
     use crate::logging::Trap;
     use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime, get_file_sz};
@@ -116,17 +114,19 @@ pub mod rsync {
                     } else {
 
                         // TODO: MULTITHREADING
-                        println!("Adding to record: {:?}", current_path);
-                        let source = self.into_source(&current_path)?; let mtime = self.local_file_mtime(&current_path)?; let pathpair = PathPair::from(source, current_path);
+                        let source = self.into_source(&current_path)?; 
+                        let mtime = self.local_file_mtime(&current_path)?; 
+                        println!("Adding to record: {:?}, {}", current_path, mtime);
+                        let pathpair = PathPair::from(source, current_path);
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
                         // as it is not relevant.
+                        /*
                         if self.record.snapshot.is_deleted(&pathpair) {
                             self.record.snapshot.undelete(&pathpair);
-                        }
+                        */
 
-                        println!("{:?}", pathpair.destination);
                         self.record.snapshot.add_entry(pathpair.clone(), self.snapshot_root_path.clone().unwrap(), mtime);
                     }
                 }

@@ -1,8 +1,10 @@
-use std::collections::{HashMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Result, Formatter};
+use fxhash::FxHashMap;
+use std::thread;
 
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]
@@ -64,7 +66,7 @@ impl PartialOrd for PathPair {
 /// Using the source path as key, we can get data.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Snapshot {
-    pub entries: HashMap<PathBuf, PathBufx>,
+    pub entries: FxHashMap<PathBuf, PathBufx>,
     pub deleted_entries: BTreeSet<PathPair>,
 }
 
@@ -75,13 +77,14 @@ impl Display for Snapshot {
 }
 
 impl Snapshot {
-    pub fn new(cap: usize) -> Self {
+    pub fn new() -> Self {
         Snapshot {
-            entries: HashMap::with_capacity(cap),
+            entries: FxHashMap::default(),
             deleted_entries: BTreeSet::new(),
         }
     }
 
+    // TODO: Fix insertion bottleneck
     pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: PathBuf, mtime: u64) {
         self.entries.insert(
             pathpair.source.clone(), 

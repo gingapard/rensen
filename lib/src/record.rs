@@ -20,7 +20,7 @@ impl Record {
     pub fn new() -> Self {
         Record {
             size: 0,
-            snapshot: Snapshot::new(100_000),
+            snapshot: Snapshot::new(),
         }
     }
 }
