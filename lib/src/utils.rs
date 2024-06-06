@@ -9,7 +9,6 @@ use std::os::unix::fs::PermissionsExt;
 use std::time::{SystemTime, Duration};
 use ssh2::FileStat;
 use chrono::offset;
-use termion::cursor;
 
 use crate::logging;
 use logging::Trap;
@@ -18,7 +17,7 @@ use crate::traits::ConvertFromPath;
 
 pub fn get_datetime() -> String {
     return offset::Local::now()
-        .format("%Y-%m-%d-%H-%M-%SZ")
+        .format("%Y-%m-%d-%H-%M-%S")
         .to_string()
 }
 
@@ -125,6 +124,7 @@ where
     add_dir_contents_to_tar(source, &mut tar_builder, source, &mut files_added, &file_count)?;
     tar_builder.finish()?;
 
+    print!("Compressing... ");
     // Gzip compress
     let tar_file = File::open(tar_file_path)?;
     let gz_file = File::create(destination)?;
@@ -134,6 +134,7 @@ where
     // Cleanup: remove temp tar file, remove uncompressed file
     let _ = fs::remove_dir_all(source);
     let _ = fs::remove_file(tar_file_path);
+    println!("Done");
 
     Ok(())
 }

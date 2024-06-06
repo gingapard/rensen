@@ -168,7 +168,7 @@ pub mod rsync {
 
             // Count up total size
             for entry in &self.record.snapshot.entries {
-                self.record.size += get_file_sz(&entry.1.file_path);
+                self.record.size = get_file_sz(&entry.1.file_path);
             }
 
             Ok(())
