@@ -1,4 +1,4 @@
-# Sentinal Redundancy
+# Redundancy Sentinel
 
 Simple remote sync service.
 
@@ -6,12 +6,14 @@ Simple remote sync service.
 
 Install required dependencies:     
 ```bash
-sudu ./dep.sh
+sudo ./dep.sh
 ```
 
 Run the build script:     
 ```bash
 sudo ./build.sh
 ```
+
+
 
 
