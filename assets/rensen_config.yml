@@ -9,7 +9,7 @@
 hosts: /etc/rensen/hosts.yml
 
 # Path to where all backupped files with be stored. 
-backupping: /etc/rensen/backups
+backups: /etc/rensen/backups
 
 # Path for storing complete/compiled snapshots
 snapshots: /etc/rensen/snapshots
