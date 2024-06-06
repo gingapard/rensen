@@ -63,7 +63,7 @@ pub struct HostConfig {
     pub key: Option<PathBuf>, // default: "$HOME/.ssh/ed25516"
     pub source: PathBuf,
     pub destination: PathBuf,
-    pub cron_schedule: Option<String>, // defualt `0 0 * * *`
+    pub cron_schedule: Option<String>, // defualt `* 0 0 * * * *`
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

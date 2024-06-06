@@ -1,12 +1,11 @@
 pub mod rsync {
     use std::fs;
-    use std::io::{self, Write, Read};
+    use std::io::{self, stdout, Write, Read};
     use std::net::TcpStream;
     use ssh2::{Session, FileStat};
     use std::time::SystemTime;
     use std::path::{Path, PathBuf}; 
     use std::ffi::OsStr;
-    use std::rc::Rc;
     use crate::traits::*;
     use crate::logging::Trap;
     use crate::config::*;
@@ -44,6 +43,19 @@ pub mod rsync {
                 incremental: false,
                 debug,
             }
+        }
+
+        pub fn debug(&self, s: &str) -> Result<(), Trap> {
+            if self.debug {
+                print!("{}", s);
+                io::stdout()
+                    .flush()
+                    .map_err(|err| {
+                        Trap::STD(format!("Coult not flush output: {}", err))
+                    })?;
+            }
+
+            Ok(())
         }
 
         /// Returns last_modified_time from metadata in secs (as u64)
@@ -94,7 +106,7 @@ pub mod rsync {
                             .to_path_buf()
                     );
 
-                    println!("Deleting: {:?}", pair);
+                    // println!("Deleting: {:?}", pair);
                     self.record.snapshot.mark_as_deleted(pair);
                 }
             }
@@ -102,37 +114,38 @@ pub mod rsync {
             Ok(())
         }
 
-        pub fn update_entries(&mut self, dir_path: &PathBuf) -> Result<(), Trap> {
+        pub fn update_entries(&mut self, dir_path: &PathBuf, snapshot: &mut Snapshot) -> Result<(), Trap> {
             
             // let snapshot_root_path = Rc::from(self.snapshot_root_path.clone().unwrap());
             let snapshot_root_path = self.snapshot_root_path.clone().unwrap();
-            let mut snapshot = Snapshot::new();
 
             if let Ok(entries) = fs::read_dir(dir_path) {
                 for entry in entries {
                     let entry = match entry {
-                        Ok(v) => v,
+                        Ok(entry) => entry,
                         Err(_) => continue,
                     };
 
                     let current_path = entry.path();
 
                     if current_path.is_dir() {
-                        self.update_record(&current_path)?;
+                        self.update_entries(&current_path, snapshot)?;
                     } else {
 
                         // TODO: MULTITHREADING
                         let source = self.into_source(&current_path)?; 
                         let mtime = self.local_file_mtime(&current_path)?; 
-                        println!("Adding to record: {:?}, {}", current_path, mtime);
+                        // println!("Adding to record: {:?}, {}", current_path, mtime);
+
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
                         // as it is not relevant.
-                        /*
+
+                        let pathpair = PathPair::from(source.clone(), current_path.clone());
                         if self.record.snapshot.is_deleted(&pathpair) {
                             self.record.snapshot.undelete(&pathpair);
-                        */
+                        }
 
                         // self.record.snapshot.entries.insert(source, PathBufx::from(current_path, snapshot_root_path, mtime));
                         snapshot.entries.insert(source, PathBufx { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime});
@@ -140,13 +153,17 @@ pub mod rsync {
                 }
             }
 
-            self.record.snapshot = snapshot;
 
             Ok(())
         }
 
+        /// base_path: path to where dir the files were copied to.
         pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
-            let _ = self.update_entries(base_path)?;
+            let mut snapshot = Snapshot::new();
+
+            let _ = self.update_entries(base_path, &mut snapshot)?;
+            self.record.snapshot = snapshot;
+
             let _ = self.update_deleted_entries()?;
 
             // Count up total size
@@ -211,13 +228,13 @@ pub mod rsync {
         ///
         fn backup(&mut self) -> Result<(), Trap> {
 
-            print!("Connecting to host... ");
+            let _ = self.debug("Connecting to host... ")?;
             self.connect()?;
-            println!("Done");
+            let _ = self.debug("Done\n")?;
 
-            print!("Authenticating key... ");
+            let _ = self.debug("Authenticating... ")?;
             self.auth()?;
-            println!("Done");
+            let _ = self.debug("Done\n")?;
 
             let datetime = get_datetime();
             let source = &self.host_config.source;
@@ -237,19 +254,16 @@ pub mod rsync {
                 Some(self.snapshot_root_path.clone().unwrap().join(format!("{}", self.host_config.identifier)))
             };
 
-            println!("Copying remote files...");
             self.copy_remote_directory(&source, &self.complete_destination.clone().unwrap())?;
-            println!("Successfully copied remote files!");
 
-            print!("Updating records... ");
+            let _ = self.debug("Updating Records... ")?;
             self.update_record(&mut self.snapshot_root_path.clone().unwrap())?;
-            println!("Done");
+            let _ = self.debug("Done\n")?;
 
             // $HOME/destination/$identifier/.records
             let record_dir_path = self.host_root_path.clone().unwrap()
                 .join(".records");
 
-            print!("Adding records... ");
             if !record_dir_path.exists() {
                 fs::create_dir_all(&record_dir_path).map_err(|err| {
                     Trap::FS(format!("Could not create directory: {}", err))
@@ -257,7 +271,7 @@ pub mod rsync {
             }
 
             // Serializeing records
-            print!("Serilizing records... ");
+            let _ = self.debug("Wrting records... ")?;
             let _ = self.record.serialize_json(&record_dir_path.join("record.json"));
             println!("Done");
 
@@ -271,21 +285,16 @@ pub mod rsync {
                 format!("{}.json", snapshot_root_file_stem.to_str().unwrap_or("broken"))
             ));
 
-            println!("Done");
-
             // Compressing and archive
-            print!("Archiving... ");
             let archive_compress_dest: &str = snapshot_root_path_binding.to_str().unwrap();
-            println!("Done");
 
-            print!("Compressing... ");
             let _ = make_tar_gz(
                 self.snapshot_root_path.clone().unwrap(),
                 format!("{}.tar.gz", archive_compress_dest)
             );
-            
-            println!("Done");
 
+            let _ = self.debug("Status: OK\n")?;
+            
             Ok(())
         }
 

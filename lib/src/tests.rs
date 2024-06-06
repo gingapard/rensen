@@ -36,7 +36,7 @@ pub fn test_serialize_yaml() {
         Path::new("~/.ssh/testkey").to_path_buf(),
         Path::new("remote/path").to_path_buf(),
         Path::new("dest/path").to_path_buf(),
-        24.0,
+        String::from("* 0 0 * * * *")
     );
     
     let host2 = config::HostConfig::from(
@@ -46,7 +46,7 @@ pub fn test_serialize_yaml() {
         Path::new("~/.ssh/testkey").to_path_buf(),
         Path::new("remote/path").to_path_buf(),
         Path::new("dest/path").to_path_buf(),
-        24.0,
+        String::from("* 0 0 * * * *")
     );
 
     let settings: Settings = Settings::new(vec![config::Host{ hostname: String::from("my first host"), config: host2}, config::Host{ hostname: String::from("mitnik"), config: host1}]);

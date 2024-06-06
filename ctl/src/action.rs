@@ -9,9 +9,7 @@ use console::Style;
 
 use std::time::SystemTime;
 use crate::utils::*;
-
-use std::path::PathBuf;
-use std::fs;
+use std::path::PathBuf; use std::fs;
 
 #[derive(PartialEq)]
 pub enum BackupMethod {
@@ -528,7 +526,7 @@ impl Action {
             .map_err(|err| Trap::Deserialize(format!("Could not read record {:?}: {}", record_path, err)))?;
         println!("Done");
 
-        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
+        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, true);
         
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
              "incremental" | "inc"| "i" => BackupMethod::Incremental,
@@ -572,13 +570,13 @@ impl Action {
                     println!("\nAliases:\nincremental, inc, i\nfull, f");
                 },
                 "list"    => {
-                    println!("l, list <snapshots, config> <hostname>      Lists snapshots taken of host.");
+                    println!("l, list <hostname> <snapshots, config>     Lists snapshots taken of host.");
                     println!("\nsnapshots: \nThis checks the snapshots/backups taken of the host at the location specified in /etc/rensen/rensen_config.yml");
                     println!("\nconfig: \nEchos out the deserialized format of the config file, stored at location specified in /etc/rensen/rensne_config.yml");
                     println!("\nAliases: \nsnapshots, snap, s\nconfig, conf, c"); 
                 },
                 "compile" => {
-                    println!("c, compile <hostname>     Starts compilation interface.");
+                    println!("c, comp <hostname>     Starts compilation interface.");
                     println!("Starts the interface for compilation, where you need to specify a snapshot from what is available in `list` action.");
                 },
                 _ => println!("Not a regognized action"),
@@ -588,14 +586,14 @@ impl Action {
         }
 
         println!("h, ?, help                             Show this info.");
-        println!("q, quit, exit                          Quits ctl.");
+        println!("q, quit, exit                          Quit ctl.");
         println!("clear                                  Clear screen.\n");
 
         println!("a, add <hostname>                      Enters host-adding interface.");
         println!("d, del <hostname>                      Deletes host config.");
         println!("m, mod <hostname>                      Enters modification interface.");
         println!("r, run <hostname> <inc, full>          Runs backup for host based on what is specified in config."); 
-        println!("l, list <snapshots, config> <hostname> Lists snapshots taken of host or echos config file.");
+        println!("l, list <hostname> <snapshots, config> ists snapshots taken of host or echos config file.");
         println!("c, comp <hostname>                     Starts compilation interface.");
     }
 }

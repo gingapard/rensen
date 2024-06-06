@@ -9,6 +9,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::time::{SystemTime, Duration};
 use ssh2::FileStat;
 use chrono::offset;
+use termion::cursor;
 
 use crate::logging;
 use logging::Trap;
@@ -35,6 +36,10 @@ where
     0
 }
 
+pub fn clear_current_line() {
+    print!("\x1B[1A\x1B[K\x1B[1A\x1B[K\x1B[1B");
+}
+
 /// Sets the metadata for $file according to $stat
 pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), Trap> {
 
@@ -58,8 +63,47 @@ pub fn set_metadata(file: &mut File, stat: FileStat) -> Result<(), Trap> {
     Ok(())
 }
 
+/// Recurses a dir and returns number of files that it contains
+pub fn count_files<P>(path: P) -> Result<usize, Trap> 
+where 
+    P: AsRef<Path> + std::fmt::Debug + Copy
+{
+    let mut sum = 0;
+    let dir = match fs::read_dir(path) {
+        Ok(dir) => dir,
+        Err(err) => return Err(Trap::FS(format!("Could not read dir {:?}: {}", path, err)))
+    };
+
+    for entry in dir {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => return Err(Trap::FS(format!("Could not read file: {}", err)))
+        }.path();
+
+        if entry.is_dir() {
+            sum += count_files(&entry)?;
+        }
+        else if entry.is_file() {
+            sum += 1;
+        }
+    }
+
+    Ok(sum)
+}
+
+#[test]
+fn test_count_files() {
+    let path = "/etc/rensen";
+    let files = count_files(path).unwrap();
+
+    assert_eq!(files, 9);
+}
+
 /// Archive directory with Tarball (tar::Builder) and
 /// compress with Gz (flate2::write::GzeEncoder, flate2::Compression).
+///
+/// source: path for directory to compress
+/// destination: path to compressed and archived file
 pub fn make_tar_gz<SRC, DST>(source: SRC, destination: DST) -> io::Result<()>
 where 
     SRC: AsRef<Path>,
@@ -68,13 +112,17 @@ where
     let source = source.as_ref();
     let destination = destination.as_ref();
 
+    let mut files_added = 0;
+    let file_count = count_files(source).unwrap();
+    println!("Archiving: ({}/{})", 0, file_count);
+
     // Temp tar file
     let tar_file_path = "temp.tar";
     let tar_file = File::create(tar_file_path)?;
 
     // Create a tarball
     let mut tar_builder = Builder::new(tar_file);
-    add_dir_contents_to_tar(source, &mut tar_builder, source)?;
+    add_dir_contents_to_tar(source, &mut tar_builder, source, &mut files_added, &file_count)?;
     tar_builder.finish()?;
 
     // Gzip compress
@@ -95,7 +143,10 @@ fn add_dir_contents_to_tar(
     root: &Path,
     tar_builder: &mut Builder<File>,
     dir: &Path,
+    files_added: &mut i32,
+    file_count: &usize
 ) -> io::Result<()> {
+
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
@@ -103,8 +154,11 @@ fn add_dir_contents_to_tar(
 
         if path.is_dir() {
             tar_builder.append_dir(name, &path)?;
-            add_dir_contents_to_tar(root, tar_builder, &path)?;
+            add_dir_contents_to_tar(root, tar_builder, &path, files_added, file_count)?;
         } else {
+            *files_added += 1;
+            clear_current_line();
+            println!("Archiving: ({}/{})", files_added, file_count );
             tar_builder.append_path_with_name(&path, name)?;
         }
     }
