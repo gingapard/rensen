@@ -4,16 +4,16 @@
     user: user2
     identifier: 1.1.1.1
     port: 22
-    key_path: ~/.ssh/testkey
+    key: ~/.ssh/testkey
     source: remote/path
     destination: dest/path
-    frequency_hrs: 24.0
+    cron_schedule: "* 0 0 * * * *"
 - hostname: mitnik
   config:
     user: user
     identifier: 1.1.1.1
     port: 22
-    key_path: ~/.ssh/testkey
+    key: ~/.ssh/testkey
     source: remote/path
     destination: dest/path
-    frequency_hrs: 24.0
+    cron_schedule: "* 0 0 * * * *"
