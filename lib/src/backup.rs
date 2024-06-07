@@ -166,13 +166,14 @@ pub mod rsync {
             // let mut snapshot = Snapshot::new();
 
             let _ = self.update_entries(base_path)?;
-
             let _ = self.update_deleted_entries()?;
 
             // Count up total size
             for entry in &self.record.snapshot.entries {
                 self.record.size = get_file_sz(&entry.1.file_path);
             }
+
+            for 
 
             Ok(())
         }
@@ -390,7 +391,12 @@ pub mod rsync {
                 let new_destination = destination.join(entryname);
 
                 if stat.is_file() {
-                    self.copy_remote_file(&new_source, &new_destination)?;
+                    match self.copy_remote_file(&new_source, &new_destination) {
+                        Ok(_) => (),
+                        Err(err) => { 
+                            println!("{} Could not receive file, please check permissions: {:?}", <Style as Clone>::clone(&self.style).bold().red().apply_to(String::from("Skipping")), err);
+                        }
+                    }
                 }
                 else if stat.is_dir() {
                     let destination_subdir = destination.join(&entryname);
@@ -398,7 +404,12 @@ pub mod rsync {
                         Trap::FS(format!("Could not create directory: {}\nCheck permissions!", err))
                     })?;
 
-                    self.copy_remote_directory(&new_source, &new_destination)?;
+                    match self.copy_remote_directory(&new_source, &new_destination) {
+                        Ok(_) => (),
+                        Err(err) => { 
+                            println!("{} Directory out of reach, please check permissions: {:?}", <Style as Clone>::clone(&self.style).bold().red().apply_to(String::from("Skipping")), err);
+                        }
+                    }
                 }
             }
            
