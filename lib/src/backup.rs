@@ -6,6 +6,9 @@ pub mod rsync {
     use std::time::SystemTime;
     use std::path::{Path, PathBuf}; 
     use std::ffi::OsStr;
+    use console::Style;
+    use std::rc::Rc;
+
     use crate::traits::*;
     use crate::logging::Trap;
     use crate::config::*;
@@ -14,18 +17,20 @@ pub mod rsync {
     use crate::snapshot::{PathPair, PathBufx, Snapshot};
 
     pub struct Sftp<'a> {
+        
+        /* Public */
         pub host_config: &'a HostConfig,
         pub global_config: &'a GlobalConfig,
         pub record: Record,
         pub sess: Option<Session>,
+        pub incremental: bool,
+        pub debug: bool,
 
-        // paths
+        /* Private */
         host_root_path: Option<PathBuf>,
         snapshot_root_path: Option<PathBuf>,
         complete_destination: Option<PathBuf>,
-
-        pub incremental: bool,
-        pub debug: bool,
+        style: Rc<Style>,
     }
 
     impl<'a> Sftp<'a> {
@@ -35,13 +40,13 @@ pub mod rsync {
                 global_config,
                 record,
                 sess: None,
+                incremental: false,
+                debug,
 
                 host_root_path: None,
                 snapshot_root_path: None,
                 complete_destination: None,
-
-                incremental: false,
-                debug,
+                style: Rc::new(Style::new()),
             }
         }
 
@@ -114,7 +119,7 @@ pub mod rsync {
             Ok(())
         }
 
-        pub fn update_entries(&mut self, dir_path: &PathBuf, snapshot: &mut Snapshot) -> Result<(), Trap> {
+        pub fn update_entries(&mut self, dir_path: &PathBuf /*, snapshot: &mut Snapshot */) -> Result<(), Trap> {
             
             // let snapshot_root_path = Rc::from(self.snapshot_root_path.clone().unwrap());
             let snapshot_root_path = self.snapshot_root_path.clone().unwrap();
@@ -129,7 +134,7 @@ pub mod rsync {
                     let current_path = entry.path();
 
                     if current_path.is_dir() {
-                        self.update_entries(&current_path, snapshot)?;
+                        self.update_entries(&current_path)?;
                     } else {
 
                         // TODO: MULTITHREADING
@@ -148,21 +153,19 @@ pub mod rsync {
                         }
 
                         // self.record.snapshot.entries.insert(source, PathBufx::from(current_path, snapshot_root_path, mtime));
-                        snapshot.entries.insert(source, PathBufx { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime});
+                        self.record.snapshot.entries.insert(source, PathBufx { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime});
                     }
                 }
             }
-
 
             Ok(())
         }
 
         /// base_path: path to where dir the files were copied to.
         pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
-            let mut snapshot = Snapshot::new();
+            // let mut snapshot = Snapshot::new();
 
-            let _ = self.update_entries(base_path, &mut snapshot)?;
-            self.record.snapshot = snapshot;
+            let _ = self.update_entries(base_path)?;
 
             let _ = self.update_deleted_entries()?;
 
@@ -405,14 +408,14 @@ pub mod rsync {
         /// Copy remote file (source) to destination.
         fn copy_remote_file(&self, source: &Path, destination: &Path) -> Result<(), Trap> {
             // TODO: MULTITHREADING
-
+            
             if self.incremental {
                 // check mtime data at local and source
                 let remote_mtime: &u64 = &self.remote_file_mtime(source)?; 
 
                 let dest_as_source = self.into_source(destination)?;
                 if remote_mtime <= self.record.snapshot.mtime(&dest_as_source).unwrap_or(&0) {
-                    println!("Skipping: {:?}", source);
+                    println!("{} {:?}", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Skipping")), source);
                     return Ok(());
                 }
             }
@@ -432,7 +435,7 @@ pub mod rsync {
                 Trap::FS(format!("Could not create file: {}\nCheck permissions!", err))
             })?;
 
-            print!("Copying: {:?} to {:?}... ", source, destination);
+            print!("{} {:?} ... ", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Getting")), source);
             let mut buffer = [0; 4096];
             loop {
                 match channel.read(&mut buffer) {
@@ -451,10 +454,10 @@ pub mod rsync {
             println!("Done");
 
             // Sets metadata for the newly created file to the same as the remote file.
-            print!("Copying metadata... ");            
+            // print!("Copying metadata... ");            
             let stat = self.remote_filestat(source)?;
             let _ = set_metadata(&mut file, stat);
-            println!("Done");
+            // println!("Done");
 
             Ok(())
         }

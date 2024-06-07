@@ -589,11 +589,11 @@ impl Action {
         println!("q, quit, exit                          Quit ctl.");
         println!("clear                                  Clear screen.\n");
 
-        println!("a, add <hostname>                      Enters host-adding interface.");
+        println!("a, add <hostname>                      Enter host-adding interface.");
         println!("d, del <hostname>                      Deletes host config.");
-        println!("m, mod <hostname>                      Enters modification interface.");
-        println!("r, run <hostname> <inc, full>          Runs backup for host based on what is specified in config."); 
-        println!("l, list <hostname> <snapshots, config> ists snapshots taken of host or echos config file.");
-        println!("c, comp <hostname>                     Starts compilation interface.");
+        println!("m, mod <hostname>                      Enter modification interface.");
+        println!("r, run <hostname> <inc, full>          Run backup for host based on what is specified in config."); 
+        println!("l, list <hostname> <snapshots, config> list snapshots taken of host or echos config file.");
+        println!("c, comp <hostname>                     Start compilation interface.");
     }
 }
