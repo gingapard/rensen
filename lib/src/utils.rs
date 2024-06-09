@@ -21,33 +21,16 @@ pub fn get_datetime() -> String {
         .to_string()
 }
 
-pub fn get_file_sz<P>(path: P) -> Result<u64, Trap>
+pub fn get_file_sz<P>(path: P) -> u64
 where 
     P: AsRef<Path> 
 {
-
-    let path = path.as_ref();
-    let file_stem = match path.file_stem() {
-        Some(file_stem) => file_stem,
-        None => return Err(Trap::FS(String::from("")))
-    };
-
-    let mut temp_path = PathBuf::from("/tmp");
-    temp_path.push("rensen");
-    temp_path.push(&file_stem);
-    
-    fs::create_dir_all("/tmp/rensen");
-    demake_tar_gz(path, temp_path);
-
     match fs::metadata(path) {
-        Ok(metadata) => {
-            return Ok(metadata.len())
-        }
-        _ => ()
+        Ok(metadata) => metadata.len(),
+        Err(_) => 0,
     }
-
-    Ok(0)
 }
+
 
 pub fn clear_current_line() {
     print!("\x1B[1A\x1B[K\x1B[1A\x1B[K\x1B[1B");

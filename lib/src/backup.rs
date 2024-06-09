@@ -14,7 +14,7 @@ pub mod rsync {
     use crate::config::*;
     use crate::utils::{make_tar_gz, set_metadata, get_datetime, get_file_sz};
     use crate::record::Record;
-    use crate::snapshot::{PathPair, PathBufx, Snapshot};
+    use crate::snapshot::{PathPair, FileEntry, Snapshot};
 
     pub struct Sftp<'a> {
         
@@ -140,6 +140,7 @@ pub mod rsync {
                         // TODO: MULTITHREADING
                         let source = self.into_source(&current_path)?; 
                         let mtime = self.local_file_mtime(&current_path)?; 
+                        let size = get_file_sz(&current_path);
                         // println!("Adding to record: {:?}, {}", current_path, mtime);
 
 
@@ -152,8 +153,10 @@ pub mod rsync {
                             self.record.snapshot.undelete(&pathpair);
                         }
 
+                        
+
                         // self.record.snapshot.entries.insert(source, PathBufx::from(current_path, snapshot_root_path, mtime));
-                        self.record.snapshot.entries.insert(source, PathBufx { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime});
+                        self.record.snapshot.entries.insert(source, FileEntry { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime, size});
                     }
                 }
             }
@@ -169,11 +172,14 @@ pub mod rsync {
             let _ = self.update_deleted_entries()?;
 
             // Count up total size
-            for entry in &self.record.snapshot.entries {
-                self.record.size = get_file_sz(&entry.1.file_path);
+            let mut total_size = 0;
+            for key in self.record.snapshot.entries.keys() {
+                if let Some(size) = self.record.snapshot.size(key) {
+                    total_size += size;
+                }
             }
 
-            for 
+            self.record.size = total_size;
 
             Ok(())
         }

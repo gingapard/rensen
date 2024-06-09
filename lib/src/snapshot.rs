@@ -9,26 +9,29 @@ use std::thread;
 
 /// Wrapper for PathBuf holding its mtime as u64
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PathBufx {
+pub struct FileEntry {
     pub file_path: PathBuf, 
     pub snapshot_path: PathBuf, // root path (no extension)
     pub mtime: u64,
+    pub size: u64,
 }
 
-impl PathBufx {
+impl FileEntry {
     pub fn new() -> Self {
-        PathBufx {
+        FileEntry {
             file_path: PathBuf::new(),
             snapshot_path: PathBuf::new(),
             mtime: u64::MIN,
+            size: u64::MIN,
         }
     }
 
-    pub fn from(file_path: PathBuf, snapshot_path: PathBuf, mtime: u64) -> Self {
-        PathBufx {
+    pub fn from(file_path: PathBuf, snapshot_path: PathBuf, mtime: u64, size: u64) -> Self {
+        FileEntry {
             file_path,
             snapshot_path,
             mtime,
+            size,
         }
     }
 }
@@ -67,7 +70,7 @@ impl PartialOrd for PathPair {
 /// Using the source path as key, we can get data.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Snapshot {
-    pub entries: FxHashMap<PathBuf, PathBufx>,
+    pub entries: FxHashMap<PathBuf, FileEntry>,
     pub deleted_entries: BTreeSet<PathPair>,
 }
 
@@ -85,10 +88,10 @@ impl Snapshot {
         }
     }
 
-    pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: Rc<PathBuf>, mtime: u64) {
+    pub fn add_entry(&mut self, pathpair: PathPair, snapshot_path: Rc<PathBuf>, mtime: u64, size: u64) {
         self.entries.insert(
             pathpair.source, 
-            PathBufx::from(pathpair.destination, Rc::try_unwrap(snapshot_path).unwrap().to_path_buf(), mtime)
+            FileEntry::from(pathpair.destination, Rc::try_unwrap(snapshot_path).unwrap().to_path_buf(), mtime, size)
         );
     }
 
@@ -112,5 +115,9 @@ impl Snapshot {
 
     pub fn path(&self, key: &PathBuf) -> Option<&PathBuf> {
         self.entries.get(key).map(|entry| &entry.file_path)
+    }
+    
+    pub fn size(&self, key: &PathBuf) -> Option<&u64> {
+        self.entries.get(key).map(|entry| &entry.size)
     }
 }
