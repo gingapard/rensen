@@ -37,7 +37,7 @@ impl ByteUnit {
 impl fmt::Display for ByteUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ByteUnit::B => write!(f, "bytes"),
+            ByteUnit::B   => write!(f, "B"),
             ByteUnit::Kib => write!(f, "Kib"),
             ByteUnit::Mib => write!(f, "MiB"),
             ByteUnit::Gib => write!(f, "Gib"),
@@ -76,10 +76,4 @@ pub fn format_bytes(bytes: u64) -> MemoryUsage {
 fn test_format_bytes() {
     let bytes: u64 = 900012000;
     assert_eq!(format_bytes(bytes), MemoryUsage { amount: 0.0, unit: ByteUnit::B });
-}
-
-pub fn sort_dates(dates: &mut Vec<PathBuf>) -> () {
-
-
-    ()
 }

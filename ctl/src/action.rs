@@ -470,9 +470,7 @@ impl Action {
         println!("{}", style.clone().bold().apply_to(format!("{}: ", hostname).as_str()));
 
         for entry in entries_sorted_by_date {
-            
             let entry = entry.unwrap().0;
-
             let record = Record::deserialize_json(&entry.path())
                 .map_err(|err| Trap::Deserialize(format!("Could not deserialize record, size uavailable: {}", err)))?;
 
