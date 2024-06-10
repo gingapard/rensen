@@ -510,7 +510,7 @@ impl Action {
             .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
         // Gettings the host config associated with hostname
-        let host_config = match settings.associated_config(&hostname) {
+        let mut host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
             None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
         };
@@ -524,21 +524,23 @@ impl Action {
             .join(".records")
             .join("record.json");
 
+        print!("Reading record... ");
         let record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not deserialize record: {}", err)))?;
+            .map_err(|err| Trap::Deserialize(format!("Could not read record {:?}: {}", record_path, err)))?;
+        println!("Done");
 
-        let mut sftp: Sftp = Sftp::new(&host_config, &self.global_config, record, false);
-
+        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, true);
+        
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-            "full" => BackupMethod::Full,
-            "inc"  => BackupMethod::Incremental,
-                 _ => return Err(Trap::InvalidInput(String::from("Invalid Input")))
+             "incremental" | "inc"| "i" => BackupMethod::Incremental,
+                           "full" | "f" => BackupMethod::Full,
+                                      _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
         };
 
         if backup_method == BackupMethod::Incremental {
             sftp.incremental = true;
         }
-        
+
         sftp.backup()?;
 
         Ok(())

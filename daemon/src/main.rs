@@ -21,8 +21,11 @@ async fn main() -> Result<(), Trap>  {
 
     let mut schedules: Vec<Arc<HostSchedule>> = Vec::new();
     for host in settings.hosts.iter() {
+        if host.hostname == "dummy" { continue }; // Skip dummy host
         if let Some(cron_schedule) = &host.config.cron_schedule {
             println!("Cron: {}", cron_schedule);
+
+            // Parse cron expression and push to vector which will await it's time for exec
             match Schedule::from_str(cron_schedule) {
                 Ok(schedule) => {
                     let host_schedule = Arc::new(HostSchedule { host: host.clone().into(), schedule, });
@@ -34,10 +37,12 @@ async fn main() -> Result<(), Trap>  {
                 }
             }
         } else {
+
+            // Defualts cron to midnight every day if parsing fails
             log_trap(&global_config, &Trap::Missing(format!("Missing cron_schedule for `{}`: Defaulting to `0 0 * * *`", &host.hostname)));
             let host_schedule = Arc::new(HostSchedule {
                 host: host.clone().into(),
-                schedule: Schedule::from_str("* 0 0 * * * *").unwrap(),
+                schedule: Schedule::from_str("0 0 0 * *").unwrap(),
             });
 
             schedules.push(host_schedule);
