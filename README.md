@@ -35,26 +35,3 @@ Conifguration for hosts can be changed inside the .yml file, or in the rensen ct
 ```
 
 You should specify the `cron_schedule` according to how often you want the `rensend.service` to run backup tasks.   
-
-### Running Manuel Backups
-
-Add host via rensen-ctl interface.
-```bash
-add myserver
-```
-This will give you the following easy to follow inerface    
-```bash
-addr: 192.168.1.116
-user: root
-port (press enter for 22): 
-ssh-key path: /home/user/.ssh/ke 
-source: /etc/mysql
-destination: --Deprecated--
-backupping schedule (Cron expression): * 0 0 * * * *
-```
-
-Run Manuel Backups
-
-```bash
-run myserver full
-```
