@@ -22,11 +22,11 @@ async fn main() -> Result<(), Trap>  {
     let mut schedules: Vec<Arc<HostSchedule>> = Vec::new();
     for host in settings.hosts.iter() {
         if let Some(cron_schedule) = &host.config.cron_schedule {
+            println!("Cron: {}", cron_schedule);
             match Schedule::from_str(cron_schedule) {
                 Ok(schedule) => {
-                    
                     let host_schedule = Arc::new(HostSchedule { host: host.clone().into(), schedule, });
-                    
+                    println!("host_schedule: {:?}", host_schedule);
                     schedules.push(host_schedule);
                 },
                 Err(err) => {

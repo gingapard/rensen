@@ -67,7 +67,7 @@ impl BackupScheduler {
     /// when self.should_run() == true
     /// Will wait 60 seconds between each check
     pub async fn run_scheduler(&self) -> Result<(), Trap> {
-        let mut interval = interval(Duration::from_secs(10));
+        let mut interval = interval(Duration::from_secs(30));
 
         println!("{:?}", self.schedules);
 

@@ -12,15 +12,15 @@ use crate::utils::*;
 use std::path::PathBuf; use std::fs;
 
 #[derive(PartialEq)]
-pub enum BackupMethod {
-    Full,
-    Incremental,
-}
-
-#[derive(PartialEq)]
 pub enum ListMethod {
     Snapshots,
     Config,
+}
+
+#[derive(PartialEq)]
+pub enum BackupMethod {
+    Full,
+    Incremental,
 }
 
 #[derive(PartialEq)]
@@ -510,35 +510,36 @@ impl Action {
             .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
         // Gettings the host config associated with hostname
-        let mut host_config = match settings.associated_config(&hostname) {
+        let host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
             None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
         };
 
         // record path, inti sftp, check method, run
-        // Formatting path
+
+
+        // Construcing path to record.json
+        // /etc/rensen/backups/192.168.1.x/.records/record.json
         let record_path = self.global_config.backups
             .join(&host_config.identifier)
             .join(".records")
             .join("record.json");
 
-        print!("Reading record... ");
         let record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not read record {:?}: {}", record_path, err)))?;
-        println!("Done");
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize record: {}", err)))?;
 
-        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, true);
-        
+        let mut sftp: Sftp = Sftp::new(&host_config, &self.global_config, record, false);
+
         let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-             "incremental" | "inc"| "i" => BackupMethod::Incremental,
-                           "full" | "f" => BackupMethod::Full,
-                                      _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
+            "full" => BackupMethod::Full,
+            "inc"  => BackupMethod::Incremental,
+                 _ => return Err(Trap::InvalidInput(String::from("Invalid Input")))
         };
 
         if backup_method == BackupMethod::Incremental {
             sftp.incremental = true;
         }
-
+        
         sftp.backup()?;
 
         Ok(())
