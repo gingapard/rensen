@@ -7,7 +7,6 @@ use rensen_lib::compiler::Compiler;
 
 use console::Style;
 
-use std::time::SystemTime;
 use crate::utils::*;
 use std::path::PathBuf; use std::fs;
 
@@ -517,24 +516,21 @@ impl Action {
 
         // global_config.backups/host_config.identifier/.record/record.json
         // record path, init, check method, run
-        // Construcing path to record.json
-        // /etc/rensen/backups/192.168.1.x/.records/record.json
-        let record_path = self.global_config.backups
+        
+        let record_path = &self.global_config.backups
             .join(&host_config.identifier)
             .join(".records")
             .join("record.json");
 
-        print!("Reading record... ");
         let record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not read record {:?}: {}", record_path, err)))?;
-        println!("Done");
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize record: {}", err)))?;
 
-        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, true);
-        
-        let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-             "incremental" | "inc"| "i" => BackupMethod::Incremental,
-                           "full" | "f" => BackupMethod::Full,
-                                      _ => return Err(Trap::InvalidInput(String::from("Invalid input")))
+        let mut sftp = Sftp::new(&mut host_config, &self.global_config, record, false);
+
+        let backup_method = match self.operands[1].to_lowercase().as_str() {
+            "full" => BackupMethod::Full,
+            "inc"  => BackupMethod::Incremental,
+                 _ => return Err(Trap::InvalidInput(format!("Invalid input: {}", self.operands[1]))) 
         };
 
         if backup_method == BackupMethod::Incremental {
@@ -604,12 +600,10 @@ impl Action {
 #[cfg(test)]
 #[test]
 fn test_run_backup() {
-
     let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
     let global_config = GlobalConfig::deserialize_yaml(&global_config_path).unwrap();
 
-    let action = Action { action_type: ActionType::RunBackup, operands: vec![String::from("server"), String::from("full")], global_config };
+    let action = Action { action_type: ActionType::RunBackup, operands: vec![String::from("laptop"), String::from("inc")], global_config };
     action.execute().unwrap();
 }
-
 
