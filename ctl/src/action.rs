@@ -365,7 +365,9 @@ impl Action {
             println!("{}", style.clone().bold().apply_to("Hosts:"));
 
             for host in settings.hosts {
-                println!("->  {}", style.clone().bold().blue().apply_to(host.hostname));
+                if host.hostname != "dummy" {
+                    println!("->  {}", style.clone().bold().blue().apply_to(host.hostname));
+                }
             }
 
             return Ok(());

@@ -51,7 +51,7 @@ pub mod rsync {
         }
 
         pub fn debug(&self, s: &str) -> Result<(), Trap> {
-            if self.debug {
+            if self.debug == true {
                 print!("{}", s);
                 io::stdout()
                     .flush()
@@ -141,8 +141,7 @@ pub mod rsync {
                         let source = self.into_source(&current_path)?; 
                         let mtime = self.local_file_mtime(&current_path)?; 
                         let size = get_file_sz(&current_path);
-                        // println!("Adding to record: {:?}, {}", current_path, mtime);
-
+                        let _ = self.debug(format!("{} {:?}... ", <Style as Clone>::clone(&self.style).bold().cyan().apply_to(String::from("Recording")), &current_path).as_str());
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
@@ -153,10 +152,8 @@ pub mod rsync {
                             self.record.snapshot.undelete(&pathpair);
                         }
 
-                        
-
-                        // self.record.snapshot.entries.insert(source, PathBufx::from(current_path, snapshot_root_path, mtime));
                         self.record.snapshot.entries.insert(source, FileEntry { file_path: current_path, snapshot_path: snapshot_root_path.clone(), mtime, size});
+                        let _ = self.debug("Done\n");
                     }
                 }
             }
@@ -164,7 +161,7 @@ pub mod rsync {
             Ok(())
         }
 
-        /// base_path: path to where dir the files were copied to.
+        /// base_path: path to dir the files were copied to.
         pub fn update_record(&mut self, base_path: &PathBuf) -> Result<(), Trap> {
             // let mut snapshot = Snapshot::new();
 
@@ -266,7 +263,6 @@ pub mod rsync {
 
             self.copy_remote_directory(&source, &self.complete_destination.clone().unwrap())?;
 
-            let _ = self.debug("Updating Records... ")?;
             self.update_record(&mut self.snapshot_root_path.clone().unwrap())?;
             let _ = self.debug("Done\n")?;
 
@@ -432,7 +428,7 @@ pub mod rsync {
 
                 let dest_as_source = self.into_source(destination)?;
                 if remote_mtime <= self.record.snapshot.mtime(&dest_as_source).unwrap_or(&0) {
-                    println!("{} {:?}", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Skipping")), source);
+                    println!("{} {}@{}:{:?}", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Skipping")), self.host_config.user, self.host_config.identifier, source);
                     return Ok(());
                 }
             }
@@ -452,7 +448,7 @@ pub mod rsync {
                 Trap::FS(format!("Could not create file: {}\nCheck permissions!", err))
             })?;
 
-            print!("{} {:?} ... ", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Getting")), source);
+            print!("{} {}@{}:{:?} ... ", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Getting")), self.host_config.user, self.host_config.identifier, source);
             let mut buffer = [0; 4096];
             loop {
                 match channel.read(&mut buffer) {
