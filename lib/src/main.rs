@@ -2,7 +2,10 @@ pub mod record;
 pub mod logging;
 pub mod compiler;
 pub mod utils;
-pub use utils::hash_file; pub mod backup; pub mod config; 
+pub use utils::hash_file; 
+pub mod backup;
+use crate::backup::rsync::Sftp;
+pub mod config; 
 pub mod tests;
 pub mod traits;
 pub mod snapshot;
@@ -34,9 +37,11 @@ fn main() -> Result<()> {
     record.serialize_json(Path::new("record.json")).unwrap();
     */
 
-    /*
-    let mut config = &mut des_hosts.hosts[0].config;
-    let identifier = String::from("192.168.1.97");
+    let global_config_path = Path::new("/etc/rensen/rensen_config.yml");
+    let global_config: GlobalConfig = GlobalConfig::deserialize_yaml(global_config_path)?;
+    let settings: Settings = Settings::deserialize_yaml(&global_config.hosts)?;
+
+    let identifier = String::from("192.168.1.113");
 
     let record = match Record::deserialize_json(&config.destination.join(identifier).join(".records").join("record.json")) {
         Ok(record) => record,
@@ -47,13 +52,6 @@ fn main() -> Result<()> {
     host.incremental = true;
     host.debug = true;
     let _ = host.backup();
-    */
-
-    let path = PathBuf::from("/home/bam/backups/192.168.1.47/.records/2024-05-06-14-49-41Z.json");
-    let mut compiler = compiler::Compiler::from(&path).unwrap();
-
-    let dest = PathBuf::from("/home/dto/snapshots");
-    let _ = compiler.compile(dest.as_path());
 
     Ok(())
 }

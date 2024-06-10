@@ -515,6 +515,7 @@ impl Action {
             None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
         };
 
+        // record path, inti sftp, check method, run
         // Formatting path
         let record_path = self.global_config.backups
             .join(&host_config.identifier)
