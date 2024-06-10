@@ -4,11 +4,10 @@ use rensen_lib::traits::*;
 use rensen_lib::logging::*;
 use rensen_lib::record::*;
 
-use chrono::{Local, Timelike};
+use chrono::{Local, Timelike, SecondsFormat};
 use cron::Schedule;
 use tokio::time::{interval, Duration};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub struct HostSchedule {
@@ -39,6 +38,8 @@ impl BackupTask {
             .map_err(|err| Trap::FS(format!("Could not read record for host `{}`: {}", hostname, err)))?;
 
         let mut sftp = Sftp::new(&host_config, &self.global_config, record, inc);
+
+        sftp.incremental = inc;
         sftp.backup()?;
 
         Ok(())
@@ -59,24 +60,44 @@ impl BackupScheduler {
     /// Checking according to the hosts's schedule if it is time to
     /// backup at this moment.
     fn should_run(&self, now: &chrono::DateTime<Local>, host_schedule: &HostSchedule) -> bool {
-        let current_time = now.with_second(0).unwrap().with_nanosecond(0).unwrap();
-        host_schedule.schedule.upcoming(Local).take(1).any(|time| time == current_time)
+        let current_time = now
+        .with_second(0).unwrap()
+        .with_nanosecond(0).unwrap();
+
+        let mut upcoming_times = host_schedule.schedule.upcoming(Local).take(1);
+
+        if let Some(scheduled_time) = upcoming_times.next() {
+            println!(
+                "Current time: {} (h: {}, m: {}, s: {}), Scheduled time: {} (h: {}, m: {}, s: {})",
+                current_time.to_rfc3339_opts(SecondsFormat::Secs, true),
+                current_time.hour(), current_time.minute(), current_time.second(),
+                scheduled_time.to_rfc3339_opts(SecondsFormat::Secs, true),
+                scheduled_time.hour(), scheduled_time.minute(), scheduled_time.second()
+            );
+
+            // Compare up to minutes precision
+            return current_time == scheduled_time.with_second(0).unwrap().with_nanosecond(0).unwrap();
+        }
+        false
     }
 
     /// Looping through the schedules and running eventual backup tasks
     /// when self.should_run() == true
     /// Will wait 60 seconds between each check
     pub async fn run_scheduler(&self) -> Result<(), Trap> {
-        let mut interval = interval(Duration::from_secs(30));
+        let mut interval = interval(Duration::from_secs(60));
 
         println!("{:?}", self.schedules);
 
         loop {
+
+            // Checking every interval if it's time
             interval.tick().await;
             let now = Local::now();
 
             for host_schedule in self.schedules.iter() {
-                if self.should_run(&now, &host_schedule) == false {
+                if self.should_run(&now, &host_schedule) {
+                    println!("Should run now");
                     let global_config_clone = Arc::clone(&self.global_config);
                     let host = Arc::clone(&host_schedule.host); 
 
