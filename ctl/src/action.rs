@@ -474,7 +474,7 @@ impl Action {
         for entry in entries_sorted_by_date {
             let entry = entry.unwrap().0;
             let record = Record::deserialize_json(&entry.path())
-                .map_err(|err| Trap::Deserialize(format!("Could not deserialize record, size uavailable: {}", err)))?;
+                .map_err(|err| Trap::Deserialize(format!("Could not deserialize record, size unavailable: {}", err)))?;
 
             let mem_size: MemoryUsage = format_bytes(record.size);
             if let Some(file_stem) = entry.path().file_stem() {
@@ -496,7 +496,7 @@ impl Action {
     fn run_backup(&self) -> Result<(), Trap> {
         if self.operands.len() != 2 {
             return Err(
-                Trap::InvalidInput(
+                    Trap::InvalidInput(
                     String::from("Invalid arguments for action. Use `help` for more details")
                 )
             );
