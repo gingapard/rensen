@@ -19,7 +19,6 @@ pub use record::Record; use std::{env, net, io::Result, path::{Path, PathBuf}, e
 use env_logger;
 
 fn main() -> Result<()> {
-    env_logger::init();
 
     let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
     

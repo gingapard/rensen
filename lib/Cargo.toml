@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-env_logger = "0.11.3"
 flate2 = "1.0.28"
 log = "0.4.21"
 serde = {version = "1.0", features = ["derive"]}
@@ -15,6 +14,5 @@ sha3 = "0.10.8"
 serde_yaml = "0.8.0"
 chrono = "0.4.38"
 fxhash = "0.2.1"
-dashmap = "5.5.3"
 termion = "4.0.0"
 console = "0.15.8"

@@ -515,9 +515,8 @@ impl Action {
             None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
         };
 
-        // record path, inti sftp, check method, run
-
-
+        // global_config.backups/host_config.identifier/.record/record.json
+        // record path, init, check method, run
         // Construcing path to record.json
         // /etc/rensen/backups/192.168.1.x/.records/record.json
         let record_path = self.global_config.backups
@@ -599,3 +598,16 @@ impl Action {
         println!("c, comp <hostname>                     Start compilation interface.");
     }
 }
+
+#[cfg(test)]
+#[test]
+fn test_run_backup() {
+
+    let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
+    let global_config = GlobalConfig::deserialize_yaml(&global_config_path).unwrap();
+
+    let action = Action { action_type: ActionType::RunBackup, operands: vec![String::from("server"), String::from("full")], global_config };
+    action.execute().unwrap();
+}
+
+
