@@ -35,15 +35,3 @@ Conifguration for hosts can be changed inside the .yml file, or in the rensen ct
 ```
 
 You should specify the `cron_schedule` according to how often you want the `rensend.service` to run backup tasks.   
-
-### Running Manuel Backups
-
-Adding Host Machine
-```bash
-add myserver
-```
-
-Start Backup Task
-```bash
-run myserver full
-```
