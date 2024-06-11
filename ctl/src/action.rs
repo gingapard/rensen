@@ -513,6 +513,7 @@ impl Action {
             None => return Err(Trap::InvalidInput(format!("Host does not exist: `{}`", hostname)))
         };
 
+        // Formatting the path to where the record for that specific machine would be stored.
         let record_path = self.global_config.backups
             .join(&host_config.identifier)
             .join(".records")
@@ -524,6 +525,8 @@ impl Action {
 
         let mut sftp = Sftp::new(&host_config, &self.global_config, record, false);
 
+        // Check if second arguement is `full` or is `inc`.
+        // Running manual backup based on that.
         let backup_method = match self.operands[1].to_lowercase().as_str() {
             "full" => BackupMethod::Full,
             "inc"  => BackupMethod::Incremental,
@@ -538,9 +541,6 @@ impl Action {
 
         sftp.backup()?; 
 
-        // TODO: global_config.backups/host_config.identifier/.record/record.json
-        // record path, init, check method, run
-        
         Ok(())
     }
 
@@ -593,7 +593,7 @@ impl Action {
         println!("a, add <hostname>                      Enter host-adding interface.");
         println!("d, del <hostname>                      Deletes host config.");
         println!("m, mod <hostname>                      Enter modification interface.");
-        println!("todo: run action");
+        println!("r, run <hostname> <inc, full>          Run backup for host machine.");
         println!("l, list <hostname> <snapshots, config> list snapshots taken of host or echos config file.");
         println!("c, comp <hostname>                     Start compilation interface.");
     }

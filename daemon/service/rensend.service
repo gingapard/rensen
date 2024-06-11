@@ -1,0 +1,12 @@
+[Unit]
+Description=Rensen Backup Sentinel
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/rensend
+Restart=always
+User=root
+RestartSec=60
+
+[Install]
+WantedBy=default.target
