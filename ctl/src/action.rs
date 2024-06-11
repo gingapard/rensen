@@ -17,6 +17,12 @@ pub enum ListMethod {
 }
 
 #[derive(PartialEq)]
+enum BackupMethod {
+    Full,
+    Incremental
+}
+
+#[derive(PartialEq)]
 pub enum ActionType {
     AddHost,    // 1 arg
     DeleteHost, // 1 arg
@@ -495,18 +501,46 @@ impl Action {
             );
         }
 
+        let hostname = &self.operands[0];
         let hosts = &self.global_config.hosts;
 
         // Opening the settings file for all hosts
         let settings: Settings = Settings::deserialize_yaml(hosts)
             .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
-        // TODO: get config Some/None
+        let host_config = match settings.associated_config(&hostname) {
+            Some(config) => config,
+            None => return Err(Trap::InvalidInput(format!("Host does not exist: `{}`", hostname)))
+        };
+
+        let record_path = self.global_config.backups
+            .join(&host_config.identifier)
+            .join(".records")
+            .join("record.json");
+
+        let record = Record::deserialize_json(&record_path)
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize record: {}", err)))?;
+
+
+        let mut sftp = Sftp::new(&host_config, &self.global_config, record, false);
+
+        let backup_method = match self.operands[1].to_lowercase().as_str() {
+            "full" => BackupMethod::Full,
+            "inc"  => BackupMethod::Incremental,
+            _ => return Err(Trap::InvalidInput(format!("Not a regognozed backup method")))
+        };
+
+        if backup_method == BackupMethod::Incremental {
+            sftp.incremental = true;
+            sftp.backup()?;
+            return Ok(())
+        }
+
+        sftp.backup()?; 
 
         // TODO: global_config.backups/host_config.identifier/.record/record.json
         // record path, init, check method, run
         
-
         Ok(())
     }
 
@@ -563,4 +597,15 @@ impl Action {
         println!("l, list <hostname> <snapshots, config> list snapshots taken of host or echos config file.");
         println!("c, comp <hostname>                     Start compilation interface.");
     }
+}
+
+
+#[cfg(test)]
+#[test]
+fn test_backup() {
+    let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
+    let global_config = GlobalConfig::deserialize_yaml(&global_config_path).unwrap();
+
+    let action = Action { action_type: ActionType::RunBackup, operands: vec![String::from("server"), String::from("inc")], global_config };
+    action.execute().unwrap();
 }
