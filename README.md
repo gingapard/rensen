@@ -14,7 +14,12 @@ Run the build script:
 sudo ./build.sh
 ```
 
+## Tech
 
+Rensen uses the SFTP protocol to transfer/backup files from machines.    
+All files will be archived and compressed into the tar.gz format  
+when copied, and they will be placed in a structual way with records   
+about the content (mtime, size etc.)
 
 ## Usage/Examples
 
