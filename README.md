@@ -46,3 +46,16 @@ Conifguration for hosts can be changed inside the .yml file, or in the rensen ct
 
 You should specify the `cron_schedule` according to how often you want the `rensend.service` to run backup tasks.   
 Generating a ed25519 public/private key is recommended.
+
+### Run Manuel Backups 
+
+Adding host for backup.
+```bash
+add myserver
+```
+
+Run full backup of machine
+```bash
+run myserver full
+```
+
