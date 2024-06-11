@@ -14,6 +14,11 @@ Run the build script:
 sudo ./build.sh
 ```
 
+Setup rensen-daemon and file structure:
+```bash
+sudo ./setup.sh
+```
+
 ## Tech
 
 Rensen uses the SFTP protocol to transfer/backup files from machines.    
@@ -40,3 +45,4 @@ Conifguration for hosts can be changed inside the .yml file, or in the rensen ct
 ```
 
 You should specify the `cron_schedule` according to how often you want the `rensend.service` to run backup tasks.   
+Generating a ed25519 public/private key is recommended.
