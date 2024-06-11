@@ -35,9 +35,7 @@ fn main() -> Result<()> {
     let settings: Settings = Settings::deserialize_yaml(&global_config.hosts)?;
     let host_config = &settings.hosts[1].config;
 
-    let identifier = String::from("192.168.1.47");
-
-    let record = match Record::deserialize_json(&global_config.backups.join(&identifier).join(".records").join("record.json")) {
+    let record = match Record::deserialize_json(&global_config.backups.join(&host_config.identifier).join(".records").join("record.json")) {
         Ok(record) => record,
         _ => Record::new()
     };
