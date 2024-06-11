@@ -141,7 +141,7 @@ pub mod rsync {
                         let source = self.into_source(&current_path)?; 
                         let mtime = self.local_file_mtime(&current_path)?; 
                         let size = get_file_sz(&current_path);
-                        let _ = self.debug(format!("{} {:?}... ", <Style as Clone>::clone(&self.style).bold().cyan().apply_to(String::from("Recording")), &current_path).as_str());
+                        let _ = self.debug(format!("{} {:?}... ", <Style as Clone>::clone(&self.style).bold().blue().apply_to(String::from("Recording")), &current_path).as_str());
 
                         // If the pathpair is already marked as deleted from a previous backup
                         // (it got readded), will unmark it as deleted. Not checking mtime here
@@ -261,8 +261,10 @@ pub mod rsync {
                 Some(self.snapshot_root_path.clone().unwrap().join(format!("{}", self.host_config.identifier)))
             };
 
+            // Start backup
             self.copy_remote_directory(&source, &self.complete_destination.clone().unwrap())?;
 
+            let _ = self.debug("Updating records\n")?;
             self.update_record(&mut self.snapshot_root_path.clone().unwrap())?;
             let _ = self.debug("Done\n")?;
 
@@ -273,13 +275,12 @@ pub mod rsync {
             if !record_dir_path.exists() {
                 fs::create_dir_all(&record_dir_path).map_err(|err| {
                     Trap::FS(format!("Could not create directory: {}", err))
-                })?;
-            }
+                })?; }
 
             // Serializeing records
-            let _ = self.debug("Wrting records... ")?;
+            let _ = self.debug("Writing records... ")?;
             let _ = self.record.serialize_json(&record_dir_path.join("record.json"));
-            println!("Done");
+            let _ = self.debug("Done\n");
 
             let snapshot_root_path_binding = self.snapshot_root_path.clone().unwrap();
             let snapshot_root_file_stem = match snapshot_root_path_binding.file_name() {

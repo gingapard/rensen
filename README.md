@@ -49,7 +49,7 @@ Generating a ed25519 public/private key is recommended.
 
 ### Run Manuel Backups 
 
-Adding host for backup.
+Enter host-adding interface
 ```bash
 add myserver
 ```
