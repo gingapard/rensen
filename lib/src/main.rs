@@ -1,7 +1,6 @@
 pub mod record;
 pub mod logging;
-pub mod compiler;
-pub mod utils;
+pub mod compiler; pub mod utils;
 pub use utils::hash_file; 
 pub mod backup;
 use crate::backup::rsync::Sftp;
@@ -16,13 +15,8 @@ pub use config::*;
 
 pub use record::Record; use std::{env, net, io::Result, path::{Path, PathBuf}, error};
 // use std::collections::HashMap;
-use env_logger;
 
 fn main() -> Result<()> {
-
-    let mut des_hosts = Settings::deserialize_yaml(Path::new("hosts_2.yml"))?;
-    
-
 
     /*
     let mut entries: HashMap<PathBuf, u64> = HashMap::new();  
@@ -39,15 +33,16 @@ fn main() -> Result<()> {
     let global_config_path = Path::new("/etc/rensen/rensen_config.yml");
     let global_config: GlobalConfig = GlobalConfig::deserialize_yaml(global_config_path)?;
     let settings: Settings = Settings::deserialize_yaml(&global_config.hosts)?;
+    let host_config = &settings.hosts[1].config;
 
-    let identifier = String::from("192.168.1.113");
+    let identifier = String::from("192.168.1.47");
 
-    let record = match Record::deserialize_json(&config.destination.join(identifier).join(".records").join("record.json")) {
+    let record = match Record::deserialize_json(&global_config.backups.join(&identifier).join(".records").join("record.json")) {
         Ok(record) => record,
         _ => Record::new()
     };
 
-    let mut host = Sftp::new(&mut config, record, false);
+    let mut host = Sftp::new(&host_config, &global_config, record, false);
     host.incremental = true;
     host.debug = true;
     let _ = host.backup();
