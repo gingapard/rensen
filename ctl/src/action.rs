@@ -17,12 +17,6 @@ pub enum ListMethod {
 }
 
 #[derive(PartialEq)]
-pub enum BackupMethod {
-    Full,
-    Incremental
-}
-
-#[derive(PartialEq)]
 pub enum ActionType {
     AddHost,    // 1 arg
     DeleteHost, // 1 arg
@@ -516,31 +510,6 @@ impl Action {
 
         // global_config.backups/host_config.identifier/.record/record.json
         // record path, init, check method, run
-        let record_path = self.global_config.backups
-            .join(&host_config.identifier)
-            .join(".records")
-            .join("record.json");
-
-        // Read record
-        let record = Record::deserialize_json(&record_path)
-            .map_err(|err| Trap::Deserialize(format!("Could not deserialize record: {}", err)))?;
-
-        assert_eq!(record_path, PathBuf::from("/home/dto/rensen-opt/backups/192.168.1.47/.records/record.json"));
-
-        let mut sftp = Sftp::new(&host_config, &self.global_config, record, false);
-
-        // Parse backup method
-        let backup_method: BackupMethod = match self.operands[1].to_lowercase().as_str() {
-            "full" => BackupMethod::Full,
-            "inc"  => BackupMethod::Incremental,
-            _      => return Err(Trap::InvalidInput(format!("Invalid Input: {}", self.operands[1]))) 
-        };
-
-        if backup_method == BackupMethod::Incremental {
-            sftp.incremental = true;
-        }
-
-        sftp.backup()?; 
 
         Ok(())
     }
@@ -598,14 +567,4 @@ impl Action {
         println!("l, list <hostname> <snapshots, config> list snapshots taken of host or echos config file.");
         println!("c, comp <hostname>                     Start compilation interface.");
     }
-}
-
-#[cfg(test)]
-#[test]
-fn test_run_backup() {
-    let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
-    let global_config = GlobalConfig::deserialize_yaml(&global_config_path).unwrap();
-
-    let action = Action { action_type: ActionType::RunBackup, operands: vec![String::from("laptop"), String::from("inc")], global_config };
-    action.execute().unwrap();
 }
