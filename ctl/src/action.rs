@@ -496,20 +496,16 @@ impl Action {
         }
 
         let hosts = &self.global_config.hosts;
-        let hostname = &self.operands[0];
 
         // Opening the settings file for all hosts
         let settings: Settings = Settings::deserialize_yaml(hosts)
             .map_err(|err| Trap::FS(format!("Could not deserialize {:?}: {}", hosts, err)))?;
 
-        // Gettings the host config associated with hostname
-        let mut host_config = match settings.associated_config(&hostname) {
-            Some(config) => config,
-            None => return Err(Trap::InvalidInput(format!("hostname `{}` is not found", hostname)))
-        };
+        // TODO: get config Some/None
 
-        // global_config.backups/host_config.identifier/.record/record.json
+        // TODO: global_config.backups/host_config.identifier/.record/record.json
         // record path, init, check method, run
+        
 
         Ok(())
     }
