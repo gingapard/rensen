@@ -19,6 +19,7 @@ async fn main() -> Result<(), Trap>  {
     let settings = Settings::deserialize_yaml(&global_config.hosts)
         .map_err(|err| Trap::FS(format!("Could not deserialize Settings @ {:?}: {}", global_config.hosts, err)))?;
 
+    // Get avaialble host entries' cron schedule and pass to scheduler
     let mut schedules: Vec<Arc<HostSchedule>> = Vec::new();
     for host in settings.hosts.iter() {
         if host.hostname == "dummy" { continue }; // Skip dummy host

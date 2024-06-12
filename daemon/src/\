@@ -8,50 +8,13 @@ use chrono::{Local, Timelike, SecondsFormat};
 use cron::Schedule;
 use tokio::time::{interval, Duration};
 use std::sync::Arc;
-use std::collections::VecDeque;
 
-#[derive(Debug)]
-struct TaskQueue<T> {
-    tasks: VecDeque<T>,
-}
-
-impl<T> TaskQueue<T> {
-    fn new() -> Self {
-        TaskQueue {
-            tasks: VecDeque::new()
-        }
-    }
-
-    fn pushb(&mut self, val: T) {
-        self.tasks.push_back(val);
-    }
-
-    fn popf(&mut self) -> Option<T> {
-        self.tasks.pop_front()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.tasks.is_empty()
-    }
-
-    fn len(&self) -> usize {
-        self.tasks.len()
-    }
-
-    fn peek(&self) -> Option<&T> {
-        self.tasks.front()
-    }
-}
-
-// Struct for holding the host data with it's associate schedul
 #[derive(Debug)]
 pub struct HostSchedule {
     pub host: Arc<Host>, 
     pub schedule: Schedule,
 }
 
-// Struct for running the actual backup task
-#[derive(Debug)]
 pub struct BackupTask {
     pub global_config: Arc<GlobalConfig>, 
     pub host: Arc<Host>, 
@@ -60,7 +23,7 @@ pub struct BackupTask {
 impl BackupTask {
 
     /// Performs backup task using the rensen sftp-backup lib
-    async fn run(&self) -> Result<(), Trap> {
+    async fn run_backup_task(&self) -> Result<(), Trap> {
 
         let hostname = &self.host.hostname;
         let inc = true;
@@ -87,12 +50,11 @@ pub struct BackupScheduler {
     pub global_config: Arc<GlobalConfig>, 
     pub settings: Settings,
     pub schedules: Vec<Arc<HostSchedule>>,
-    queue: TaskQueue<BackupTask>
 }
 
 impl BackupScheduler {
     pub fn from(global_config: Arc<GlobalConfig>, settings: Settings, schedules: Vec<Arc<HostSchedule>>) -> Self {
-        BackupScheduler { global_config, settings, schedules, queue: TaskQueue::new() }
+        BackupScheduler { global_config, settings, schedules }
     }
 
     /// Checking according to the hosts's schedule if it is time to
@@ -138,11 +100,11 @@ impl BackupScheduler {
                     println!("Should run now");
                     let global_config_clone = Arc::clone(&self.global_config);
                     let host = Arc::clone(&host_schedule.host); 
-                    let backup_task = BackupTask { global_config: global_config_clone, host };
 
                     // Spawning new thread as it's time for backupping
                     tokio::spawn(async move {
-                        if let Err(err) = backup_task.run().await {
+                        let backup_task = BackupTask { global_config: global_config_clone, host };
+                        if let Err(err) = backup_task.run_backup_task().await {
                             log_trap(&backup_task.global_config, &err); 
                         }
                     });
