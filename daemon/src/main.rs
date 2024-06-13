@@ -2,8 +2,11 @@ use rensen_lib::config::*;
 use rensen_lib::traits::*;
 use rensen_lib::logging::*;
 
-pub mod daemon;
-use crate::daemon::*;
+pub mod scheduler;
+pub mod utils;
+pub mod tasks;
+
+use crate::scheduler::*;
 
 use cron::Schedule;
 use std::sync::Arc;
@@ -51,7 +54,7 @@ async fn main() -> Result<(), Trap>  {
         }
     }
 
-    let backup_scheduler = BackupScheduler::from(Arc::new(global_config), settings, schedules);
+    let backup_scheduler = Scheduler::from(Arc::new(global_config), settings, schedules);
     backup_scheduler.run_scheduler().await?;
 
     Ok(())
