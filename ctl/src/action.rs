@@ -599,13 +599,3 @@ impl Action {
     }
 }
 
-
-#[cfg(test)]
-#[test]
-fn test_backup() {
-    let global_config_path = PathBuf::from("/etc/rensen/rensen_config.yml");
-    let global_config = GlobalConfig::deserialize_yaml(&global_config_path).unwrap();
-
-    let action = Action { action_type: ActionType::RunBackup, operands: vec![String::from("server"), String::from("inc")], global_config };
-    action.execute().unwrap();
-}

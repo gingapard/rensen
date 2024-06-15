@@ -41,7 +41,7 @@ Conifguration for hosts can be changed inside the .yml file, or in the rensen ct
     key: /dummy/i/am/dum
     source: /dummy/i/am/dum
     destination: /dummy/i/am/dum
-    cron_schedule: "* * 0 0 * * *"
+    cron_schedule: "* * * * * *"
 ```
 
 You should specify the `cron_schedule` according to how often you want the `rensend.service` to run backup tasks.   
