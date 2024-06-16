@@ -25,6 +25,7 @@ pub enum Trap {
     Deserialize(String),
     Serialize(String),
     Metadata(String),
+    Scheduler(String),
 
 
 }
@@ -47,6 +48,7 @@ pub fn log_trap(global_config: &GlobalConfig, trap: &Trap) {
         Trap::Serialize(msg)    => format!("Serialize: {}", msg),
         Trap::Deserialize(msg)  => format!("Deserialize: {}", msg),
         Trap::Metadata(msg)     => format!("Metadata: {}", msg),
+        Trap::Scheduler(msg)     => format!("Scheduler: {}", msg),
     };
     
     // Opening log file

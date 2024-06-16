@@ -1,8 +1,5 @@
-use rensen_lib::backup::rsync::Sftp;
 use rensen_lib::config::*;
-use rensen_lib::traits::*;
 use rensen_lib::logging::*;
-use rensen_lib::record::*;
 
 use chrono::{Local, Timelike, SecondsFormat};
 use cron::Schedule;
@@ -32,8 +29,30 @@ impl Scheduler {
         Scheduler { global_config, settings, schedules, queue: Arc::new(Mutex::new(TaskQueue::new())) }
     }
 
-    /// Checking according to the hosts's schedule if it is time to
-    /// backup at this moment.
+    pub async fn run_executor(&mut self) -> Result<(), Trap> {
+        let mut interval = interval(Duration::from_secs(60));
+
+        // Execute while there are tasks in queue
+        loop {
+            interval.tick().await;
+
+            if let Some(task) = self.queue.lock().unwrap().peek() {
+                let _ = task.run();
+
+                self.queue.lock().unwrap().popf();
+            }
+        }
+
+        Ok(())
+    }
+
+    // Locks mutex and returns first available task if Some()
+    fn get_next_task(&self) -> Option<BackupTask> {
+        let mut queue = self.queue.lock().unwrap();
+        queue.popf()
+    }
+
+    /// Checking according to the hosts's schedule if it is time to backup at this moment.
     fn should_run(&self, now: &chrono::DateTime<Local>, host_schedule: &WSchedule) -> bool {
         let current_time = now
         .with_second(0).unwrap()
@@ -62,6 +81,7 @@ impl Scheduler {
     pub async fn run_scheduler(&mut self) -> Result<(), Trap> {
         let mut interval = interval(Duration::from_secs(60));
 
+        
         loop {
 
             // Checking every interval if it's time
