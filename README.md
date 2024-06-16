@@ -13,7 +13,7 @@ or
 git clone https://git.sditto.org/rensen.git
 ```
 
-Install required dependencies:     
+Install required dependencies (cargo, ssl, gcc):     
 ```bash sudo ./dep.sh ```
 
 Run the build script:     
