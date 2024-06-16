@@ -11,7 +11,7 @@ use crate::utils::*;
 use std::path::PathBuf; use std::fs;
 
 #[derive(PartialEq)]
-pub enum ListMethod {
+pub enum ViewSubject {
     Snapshots,
     Config,
 }
@@ -29,7 +29,8 @@ pub enum ActionType {
     ModifyHost, // 1 arg
     RunBackup,  // 2 arg
     Compile,    // 1 arg
-    List,       // 2 arg
+    ListHosts,  // 2 arg
+    View,       // 2 arg
 
     Clear,      // 0 arg
     Help,       // 0 arg
@@ -61,9 +62,12 @@ impl Action {
             ActionType::Compile    => {
                 self.compile_snapshot()?;
             },
-            ActionType::List       => {
+            ActionType::ListHosts  => {
                 self.list()?;
             },
+            ActionType::View       => {
+                self.view()?;
+            }
             ActionType::Help       => {
                 self.print_help();
             }
@@ -348,6 +352,7 @@ impl Action {
         compiler.compile(&self.global_config.snapshots)?;
         let _ = compiler.cleanup();
 
+
         Ok(())
     }
 
@@ -355,23 +360,24 @@ impl Action {
 
     fn list(&self) -> Result<(), Trap> {
 
-        // Printing hostnames of all hosts if the `list` action is pure
-        if self.operands.len() == 0 {
-            let settings: Settings = Settings::deserialize_yaml(&self.global_config.hosts)
-                .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", &self.global_config.hosts, err)))?;
+        let settings: Settings = Settings::deserialize_yaml(&self.global_config.hosts)
+            .map_err(|err| Trap::Deserialize(format!("Could not deserialize {:?}: {}", &self.global_config.hosts, err)))?;
 
-            let style = console::Style::new();
-            println!("{}", style.clone().bold().apply_to("Hosts:"));
+        let style = console::Style::new();
+        println!("{}", style.clone().bold().apply_to("Hosts:"));
 
-            for host in settings.hosts {
-                if host.hostname != "dummy" {
-                    println!("->  {}", style.clone().bold().blue().apply_to(host.hostname));
-                }
+        for host in settings.hosts {
+            if host.hostname != "dummy" {
+                println!("->  {}", style.clone().bold().blue().apply_to(host.hostname));
             }
-
-            return Ok(());
         }
-        else if self.operands.len() != 2 {
+
+        Ok(())
+    }
+
+    fn view(&self) -> Result<(), Trap> {
+
+        if self.operands.len() != 2 {
             return Err(
                 Trap::InvalidInput(
                     String::from("Invalid arguments for action. Use `help` for more details")
@@ -381,20 +387,21 @@ impl Action {
 
         // checking the list method, either listing `snapshots` or `config`
         let list_method = match self.operands[1].to_lowercase().as_str() {
-            "snapshots" | "s" | "snap" => ListMethod::Snapshots,
-               "config" | "c" | "conf" => ListMethod::Config,
+            "snapshots" | "s" | "snap" => ViewSubject::Snapshots,
+            "config"    | "c" | "conf" => ViewSubject::Config,
             _ => return Err(Trap::InvalidInput(format!("List Method: `{}` is not recognized in this action", self.operands[0])))
         };
 
         match list_method {
-            ListMethod::Snapshots => self.list_snapshots()?,
-            ListMethod::Config => self.list_config()?,
+            ViewSubject::Snapshots => self.view_snapshots()?,
+            ViewSubject::Config    => self.view_config()?,
         }
 
         Ok(())
     }
 
-    fn list_config(&self) -> Result<(), Trap> {
+    // Cats config for host
+    fn view_config(&self) -> Result<(), Trap> {
         if self.operands.len() != 2 {
             return Err(
                 Trap::InvalidInput(
@@ -413,17 +420,18 @@ impl Action {
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
-            None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
+            None => return Err(Trap::InvalidInput(format!("Hostname `{}` was not found", hostname)))
         };
 
         let style = console::Style::new();
-        println!("{}", style.clone().bold().apply_to(format!("Config ({}): ", hostname).as_str()));
+        println!("{}", style.clone().bold().apply_to(format!("{}: ", hostname).as_str()));
         println!("{}", host_config);
 
         Ok(())
     }
 
-    fn list_snapshots(&self) -> Result<(), Trap> {
+    // Lists all snapshots/backups taken of host
+    fn view_snapshots(&self) -> Result<(), Trap> {
         if self.operands.len() != 2 {
             return Err(
                 Trap::InvalidInput(
@@ -442,7 +450,7 @@ impl Action {
         // Extracting the config for associated hostname
         let host_config = match settings.associated_config(&hostname) {
             Some(config) => config,
-            None => return Err(Trap::InvalidInput(format!("hostname `{}` was not found", hostname)))
+            None => return Err(Trap::InvalidInput(format!("Hostname `{}` was not found", hostname)))
         };
 
         let dir_path = self.global_config.backups
@@ -571,7 +579,11 @@ impl Action {
                     println!("\nAliases:\nincremental, inc, i\nfull, f");
                 },
                 "list"    => {
-                    println!("l, list <hostname> <snapshots, config>     Lists snapshots taken of host.");
+                    println!("l, list    lists out all hosts.");
+
+                },
+                "view"    => {
+                    println!("v, view <hostname> <snapshots, config>     views snapshots taken of host.");
                     println!("\nsnapshots: \nThis checks the snapshots/backups taken of the host at the location specified in /etc/rensen/rensen_config.yml");
                     println!("\nconfig: \nEchos out the deserialized format of the config file, stored at location specified in /etc/rensen/rensne_config.yml");
                     println!("\nAliases: \nsnapshots, snap, s\nconfig, conf, c"); 
@@ -594,7 +606,8 @@ impl Action {
         println!("d, del <hostname>                      Deletes host config.");
         println!("m, mod <hostname>                      Enter modification interface.");
         println!("r, run <hostname> <inc, full>          Run backup for host machine.");
-        println!("l, list <hostname> <snapshots, config> list snapshots taken of host or echos config file.");
+        println!("l, list                                Lists all hosts on system.");
+        println!("v, view <hostname> <snapshots, config> views snapshots taken of host or echos config file.");
         println!("c, comp <hostname>                     Start compilation interface.");
     }
 }

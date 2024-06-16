@@ -94,7 +94,8 @@ impl Ctl {
         let action_type = match input[0].to_lowercase().as_str() {
             "a" | "add"           => ActionType::AddHost,
             "d" | "del"           => ActionType::DeleteHost,
-            "l" | "list"          => ActionType::List,
+            "l" | "list"          => ActionType::ListHosts,
+            "v" | "view"          => ActionType::View,
             "m" | "mod"           => ActionType::ModifyHost,
             "r" | "run"           => ActionType::RunBackup,
             "c" | "comp"          => ActionType::Compile,
