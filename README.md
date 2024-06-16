@@ -1,13 +1,20 @@
 # Redundancy Sentinel
 
-Simple remote sync service.
+Simple Redundancy Service.
 
 ## Build/Install
 
-Install required dependencies:     
+Clone Repo:
 ```bash
-sudo ./dep.sh
+git clone https://github.com/bampam/rensen
 ```
+or
+```bash
+git clone https://git.sditto.org/rensen.git
+```
+
+Install required dependencies:     
+```bash sudo ./dep.sh ```
 
 Run the build script:     
 ```bash
