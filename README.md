@@ -35,6 +35,6 @@ about the content (mtime, size etc.)
 
 ## Usage/Examples
 
-Please refer to docs/setup.md for full setup guide.
+Please refer to [setup.md](https://github.com/bampam/rensen/blob/main/docs/setup.md) for full setup guide.
 
 
